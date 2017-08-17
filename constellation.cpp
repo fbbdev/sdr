@@ -253,8 +253,10 @@ int main() {
 
             // Keep zoom in floating-point limits
             if ((delta > 0 && zoom < std::numeric_limits<float>::max()/factor) ||
-                (delta < 0 && zoom > std::numeric_limits<float>::min()*factor))
+                (delta < 0 && zoom > std::numeric_limits<float>::min()*factor)) {
                 zoom *= factor;
+                pos = nk_vec2_muls(pos, factor);
+            }
 
             mouse = ctx->input.mouse.pos;
 
