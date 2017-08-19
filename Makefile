@@ -50,8 +50,10 @@ ui:
 build/libsdr_ui.so : | ui
 
 
-build/%.o : %.cpp | build
+build/%.o : %.cpp stream/*.hpp | build
 	$(CXX) $(CXXFLAGS) -o $@ $<
+
+build/constellation.o : ui/*.hpp
 
 build/constellation : build/constellation.o build/libsdr_stream.a build/libsdr_ui.so
 	$(LD) $(LDFLAGS) -o $@ $< $(LIBS) $(LIBS_UI)
