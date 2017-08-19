@@ -1,4 +1,5 @@
 #include "ui/ui.hpp"
+#include "ui/view.hpp"
 #include "stream/stream.hpp"
 
 #include <cmath>
@@ -70,8 +71,7 @@ int main() {
     std::thread proc(processor, id, tap);
     proc.detach();
 
-    float zoom = 0.5f;
-    struct nk_vec2 pos = { 0.0f, 0.0f };
+    ui::View view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
     struct nk_vec2 mouse = { 0.0f, 0.0f };
 
     while (!wnd->closed()) {
@@ -81,45 +81,41 @@ int main() {
 
         auto focused = wnd->focused();
 
-        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,zoom,pos,mouse,focused](NVGcontext* vg, int width, int height) {
+        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,mouse,focused](NVGcontext* vg, int width, int height) {
             std::ostringstream fmt;
             fmt << std::defaultfloat << std::setprecision(3);
 
             bool showCursor = focused && (mouse.x > 0 && mouse.x < width)
                                       && (mouse.y > 0 && mouse.y < height);
 
-            auto center_x = width/2.0f + pos.x;
-            auto center_y = height/2.0f + pos.y;
-
-            auto scale = zoom*std::min(width, height)/2.0f;
-
+            auto view = v.compute(width, height);
+            auto center = view.global({ 0, 0 });
             // draw grid
 
             // draw center lines
             nvgFillColor(vg, nvgRGB(60, 180, 60));
             nvgStrokeColor(vg, nvgRGB(60, 180, 60));
-            if (center_x > 0 && center_x < width) {
-                nvgBeginPath(vg);
-                nvgMoveTo(vg, center_x, 0);
-                nvgLineTo(vg, center_x, height);
-                nvgStroke(vg);
+
+            nvgBeginPath(vg);
+            if (center.x > 0 && center.x < width) {
+                nvgMoveTo(vg, center.x, 0);
+                nvgLineTo(vg, center.x, height);
 
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-                nvgText(vg, center_x + 5, 5, "0", 0);
+                nvgText(vg, center.x + 5, 5, "0", 0);
             }
 
-            if (center_y > 0 && center_y < height) {
-                nvgBeginPath(vg);
-                nvgMoveTo(vg, 0, center_y);
-                nvgLineTo(vg, width, center_y);
-                nvgStroke(vg);
+            if (center.y > 0 && center.y < height) {
+                nvgMoveTo(vg, 0, center.y);
+                nvgLineTo(vg, width, center.y);
 
                 nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BOTTOM);
-                nvgText(vg, 5, center_y - 5, "0", 0);
+                nvgText(vg, 5, center.y - 5, "0", 0);
             }
+            nvgStroke(vg);
 
             // draw lines every ~100px
-            auto grid_step = 1.0f / std::pow(2.0f, std::round(std::log2(scale/100)));
+            auto grid_step = std::pow(2.0f, std::round(std::log2(view.local_delta_x(100))));
 
             nvgFillColor(vg, nvgRGBA(50, 100, 50, 230));
             nvgStrokeColor(vg, nvgRGBA(50, 100, 50, 230));
@@ -130,42 +126,44 @@ int main() {
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
             auto grid_start_x =
-                grid_step * std::floor(-center_x/scale/grid_step);
+                grid_step * std::floor(view.local_x(0)/grid_step);
             auto grid_end_x =
-                grid_step * (1 + std::ceil((width-center_x)/scale/grid_step));
+                grid_step * (1 + std::ceil(view.local_x(width)/grid_step));
 
             for (float x = grid_start_x; x < grid_end_x; x += grid_step) {
                 if (x > -grid_step && x < grid_step)
                     // skip 0
                     continue;
 
-                nvgMoveTo(vg, x*scale + center_x, 0);
-                nvgLineTo(vg, x*scale + center_x, height);
+                auto gx = view.global_x(x);
+                nvgMoveTo(vg, gx, 0);
+                nvgLineTo(vg, gx, height);
 
                 fmt.str(std::string());
                 fmt << x;
-                nvgText(vg, x*scale + center_x + 5, 5, fmt.str().c_str(), nullptr);
+                nvgText(vg, gx + 5, 5, fmt.str().c_str(), nullptr);
             }
 
             // horizontal lines
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BOTTOM);
 
             auto grid_start_y =
-                grid_step * std::floor((height-center_y)/-scale/grid_step);
+                grid_step * std::floor(view.local_y(height)/grid_step);
             auto grid_end_y =
-                grid_step * (1 + std::ceil(-center_y/-scale/grid_step));
+                grid_step * (1 + std::ceil(view.local_y(0)/grid_step));
 
             for (float y = grid_start_y; y < grid_end_y; y += grid_step) {
                 if (y > -grid_step && y < grid_step)
                     // skip 0
                     continue;
 
-                nvgMoveTo(vg, 0, -y*scale + center_y);
-                nvgLineTo(vg, width, -y*scale + center_y);
+                auto gy = view.global_y(y);
+                nvgMoveTo(vg, 0, gy);
+                nvgLineTo(vg, width, gy);
 
                 fmt.str(std::string());
                 fmt << y;
-                nvgText(vg, 5, -y*scale + center_y - 5, fmt.str().c_str(), nullptr);
+                nvgText(vg, 5, gy - 5, fmt.str().c_str(), nullptr);
             }
 
             nvgStroke(vg);
@@ -178,27 +176,29 @@ int main() {
 
             // vertical lines
             for (float x = grid_start_x + (grid_step/2); x < grid_end_x; x += grid_step) {
-                nvgMoveTo(vg, x*scale + center_x, 0);
-                nvgLineTo(vg, x*scale + center_x, height);
+                auto gx = view.global_x(x);
+                nvgMoveTo(vg, gx, 0);
+                nvgLineTo(vg, gx, height);
             }
 
             // horizontal lines
             for (float y = grid_start_y + (grid_step/2); y < grid_end_y; y += grid_step) {
-                nvgMoveTo(vg, 0, -y*scale + center_y);
-                nvgLineTo(vg, width, -y*scale + center_y);
+                auto gy = view.global_y(y);
+                nvgMoveTo(vg, 0, gy);
+                nvgLineTo(vg, width, gy);
             }
 
             nvgStroke(vg);
             nvgStrokeWidth(vg, 1);
 
             // draw constellation
-            nvgTranslate(vg, center_x, center_y);
-            nvgScale(vg, scale, -scale);
+            view.apply(vg);
 
             nvgFillColor(vg, nvgRGB(80, 208, 80));
             nvgBeginPath(vg);
+            auto r = view.local_delta_x(1.5f);
             for (auto sample: local_buf) {
-                nvgCircle(vg, sample.real(), sample.imag(), 1.5f/scale);
+                nvgCircle(vg, sample.real(), sample.imag(), r);
             }
             nvgFill(vg);
 
@@ -215,11 +215,10 @@ int main() {
                 nvgLineTo(vg, width, mouse.y);
                 nvgStroke(vg);
 
-                auto coord_x = (mouse.x - center_x)/scale,
-                     coord_y = -(mouse.y - center_y)/scale;
+                auto coord = view.local(mouse);
 
                 fmt.str(std::string());
-                fmt << coord_x << ((coord_y < 0) ? '-' : '+') << 'j' << std::abs(coord_y);
+                fmt << coord.x << ((coord.y < 0) ? '-' : '+') << 'j' << std::abs(coord.y);
 
                 bool left   = (width - mouse.x < 100),
                      bottom = (mouse.y < 50);
@@ -247,21 +246,14 @@ int main() {
                     mouse.x + (left ? -10 : 10), mouse.y + (bottom ? 10 : -10),
                     fmt.str().c_str(), nullptr);
             }
-        }, [&zoom,&pos,&mouse](nk_context* ctx, int, int) {
-            auto delta = ctx->input.mouse.scroll_delta.y,
-                 factor = std::pow(1.1f, delta);
-
-            // Keep zoom in floating-point limits
-            if ((delta > 0 && zoom < std::numeric_limits<float>::max()/factor) ||
-                (delta < 0 && zoom > std::numeric_limits<float>::min()*factor)) {
-                zoom *= factor;
-                pos = nk_vec2_muls(pos, factor);
-            }
+        }, [&view,&mouse](nk_context* ctx, int width, int height) {
+            view.zoom(ctx->input.mouse.scroll_delta.y);
 
             mouse = ctx->input.mouse.pos;
 
             if (nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT))
-                pos = nk_vec2_add(pos, ctx->input.mouse.delta);
+                view.move(view.compute(width, height)
+                              .local_delta(nk_vec2_muls(ctx->input.mouse.delta, -1)));
         });
     }
 
