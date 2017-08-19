@@ -15,7 +15,7 @@ using namespace sdr;
 
 static int devnull = open("/dev/null", O_WRONLY);
 
-static std::ptrdiff_t read_all(int fd, std::uint8_t* data, std::size_t size) {
+static std::size_t read_all(int fd, std::uint8_t* data, std::size_t size) {
     auto p = data, end = data + size;
 
     ssize_t r = 0;
@@ -28,7 +28,7 @@ static std::ptrdiff_t read_all(int fd, std::uint8_t* data, std::size_t size) {
         p += r;
     } while (p != end && r != 0);
 
-    return p - data;
+    return std::size_t(p - data);
 }
 
 static std::size_t splice_all(int src, int dst, std::size_t size) {
@@ -287,7 +287,7 @@ void Source::copy(Sink& sink) {
             auto old = buffer.size();
             buffer.resize(old + copied);
 
-            if (read_all(fd, buffer.data() + old, copied) < copied)
+            if (read_all(fd, buffer.data() + old, copied) < std::size_t(copied))
                 // Error on source
                 return;
         }
@@ -303,7 +303,7 @@ void Source::copy(FileSink& sink) {
         // Error on sink
         return;
 
-    ssize_t r = 0;
+    std::size_t r = 0;
 
     if (buffer.size()) {
         if (!write_all(sink.fd, buffer.data(), buffer.size()))
