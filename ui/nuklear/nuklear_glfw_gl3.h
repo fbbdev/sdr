@@ -15,6 +15,10 @@
 
 #include <GLFW/glfw3.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum nk_glfw_init_state{
     NK_GLFW3_DEFAULT=0,
     NK_GLFW3_INSTALL_CALLBACKS
@@ -33,5 +37,9 @@ NK_API void                 nk_glfw3_device_create(void);
 NK_API void                 nk_glfw3_char_callback(GLFWwindow *win, unsigned int codepoint);
 NK_API void                 nk_gflw3_scroll_callback(GLFWwindow *win, double xoff, double yoff);
 NK_API void                 nk_glfw3_mouse_button_callback(GLFWwindow *win, int button, int action, int mods);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
