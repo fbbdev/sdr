@@ -253,7 +253,7 @@ int main() {
 
             if (nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT))
                 view.move(view.compute(width, height)
-                              .local_delta(nk_vec2_muls(ctx->input.mouse.delta, -1)));
+                              .local_delta(ctx->input.mouse.delta));
         });
     }
 

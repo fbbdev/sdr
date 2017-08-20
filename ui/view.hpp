@@ -116,7 +116,7 @@ public:
     }
 
     void move(Vec2 delta) {
-        center_ = nk_vec2_add(center_, delta);
+        center_ = nk_vec2_sub(center_, delta);
     }
 
     void zoom(float exp) {
