@@ -3,8 +3,7 @@
 #include "ui.hpp"
 
 #include <cmath>
-#include <algorithm>
-#include <array>
+#include <limits>
 
 namespace sdr { namespace ui
 {
@@ -137,7 +136,8 @@ public:
     }
 
     AppliedView compute(int width, int height) const {
-        auto mm = std::minmax(float(width), float(height));
+        auto mm = (height > width) ? std::pair<float, float>{ height, width }
+                                   : std::pair<float, float>{ width, height };
 
         AppliedView v = {
             ((iso == NonIsometric) ? Vec2{float(width), float(height)} :
