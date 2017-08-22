@@ -1,0 +1,1 @@
+option('vector', type: 'string', value: '', description: 'SIMD instruction set flags')
