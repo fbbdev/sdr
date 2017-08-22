@@ -24,7 +24,7 @@ int main() {
 
     std::string fps = "FPS: 0";
     std::size_t frames = 0;
-    double lastTime = 0, lastMeasure = 0;
+    double lastTime = 0;
 
     bool mpressed = false;
     bool prevShowLine = false;
@@ -38,7 +38,6 @@ int main() {
             formatter << "FPS: " << frames * 2;
             fps = formatter.str();
             frames = 0;
-            lastMeasure = time;
             lastTime += 0.5;
         }
 
