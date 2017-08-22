@@ -1,6 +1,7 @@
+#include "options/options.hpp"
+#include "stream/stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
-#include "stream/stream.hpp"
 
 #include <cmath>
 #include <algorithm>
@@ -53,17 +54,20 @@ void processor(std::uint16_t id, bool tap) {
     }
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    opt::Option<std::uintmax_t> id("stream", 0);
+    opt::Option<std::uintmax_t> points("points", 1000);
+    opt::Option<bool> tap("tap", false);
+
+    if (!opt::parse({ id }, { points, tap }, argv + 1, argv + argc))
+        return -1;
+
     auto wnd = ui::Window::create("Constellation", 300, 300);
 
     if (!wnd) {
         std::cerr << "Fatal error: cannot create window" << std::endl;
         return -1;
     }
-
-    std::uint16_t id = 0;
-    unsigned int points = 1000;
-    bool tap = false;
 
     buf.resize(points);
     auto local_buf = buf;
