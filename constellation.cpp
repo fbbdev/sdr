@@ -55,11 +55,15 @@ void processor(std::uint16_t id, bool tap) {
 }
 
 int main(int argc, char* argv[]) {
-    opt::Option<std::uintmax_t> id("stream", 0);
-    opt::Option<std::uintmax_t> points("points", 1000);
-    opt::Option<bool> tap("tap", false);
+    using opt::Option;
+    using opt::Placeholder;
 
-    if (!opt::parse({ id }, { points, tap }, argv + 1, argv + argc))
+    Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
+    Option<std::uintmax_t> points("points", Placeholder("POINTS"), 1000);
+    Option<bool> tap("tap", false);
+    Option<bool> throttle("throttle", false);
+
+    if (!opt::parse({ id }, { points, tap, throttle }, argv, argv + argc))
         return -1;
 
     auto wnd = ui::Window::create("Constellation", 300, 300);

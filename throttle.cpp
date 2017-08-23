@@ -10,9 +10,12 @@
 using namespace sdr;
 
 int main(int argc, char* argv[]) {
-    opt::Option<std::uintmax_t> id("stream", 0);
+    using opt::Option;
+    using opt::Placeholder;
 
-    if (!opt::parse({ id }, {}, argv + 1, argv + argc))
+    Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
+
+    if (!opt::parse({ id }, {}, argv, argv + argc))
         return -1;
 
     auto source = stdin_source();

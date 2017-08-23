@@ -2,7 +2,6 @@
 
 #include <cctype>
 #include <iterator>
-#include <map>
 
 using namespace sdr;
 using namespace sdr::opt;
@@ -47,6 +46,14 @@ static const std::map<char, float> float_units{
     { 'E', 1e18 }
 };
 
+static bool is_bool(OptionBase const& opt) {
+    return dynamic_cast<Option<bool> const*>(&opt) != nullptr;
+}
+
+static bool is_bool(OptionBase const* opt) {
+    return dynamic_cast<Option<bool> const*>(opt) != nullptr;
+}
+
 
 StringView sdr::opt::trim(StringView s) {
     auto start = s.find_first_not_of(" \t\f\r\n");
@@ -84,7 +91,16 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
 
     auto pos_it = std::begin(opts), pos_end = std::end(opts);
 
-    for (auto it = first; it != last; ++it) {
+    for (auto it = first + 1; it != last; ++it) {
+        StringView arg = *it;
+
+        if (arg == "help") {
+            usage(*first, opts, kwopts, err);
+            return false;
+        }
+    }
+
+    for (auto it = first + 1; it != last; ++it) {
         StringView arg = *it;
         auto assign = arg.find('=');
         if (assign != StringView::npos) {
@@ -95,7 +111,7 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
             }
         } else {
             auto opt = kwmap.find(arg);
-            if (opt != kwmap.end() && dynamic_cast<Option<bool>*>(opt->second)) {
+            if (opt != kwmap.end() && is_bool(opt->second)) {
                 opt->second->parse("true", err);
                 continue;
             }
@@ -128,7 +144,16 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
 
     auto pos_it = std::begin(opts), pos_end = std::end(opts);
 
-    for (auto it = first; it != last; ++it) {
+    for (auto it = first + 1; it != last; ++it) {
+        StringView arg = *it;
+
+        if (arg == "help") {
+            usage(*first, opts, kwopts, err);
+            return false;
+        }
+    }
+
+    for (auto it = first + 1; it != last; ++it) {
         StringView arg = *it;
         auto assign = arg.find('=');
         if (assign != StringView::npos) {
@@ -141,7 +166,7 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
             }
         } else {
             auto opt = kwmap.find(arg);
-            if (opt != kwmap.end() && dynamic_cast<Option<bool>*>(opt->second)) {
+            if (opt != kwmap.end() && is_bool(opt->second)) {
                 opt->second->parse("true", err);
                 continue;
             }
@@ -161,6 +186,28 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
     return true;
 }
 
+void sdr::opt::usage(StringView program,
+                     std::initializer_list<std::reference_wrapper<OptionBase>> opts,
+                     std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
+                     std::ostream& out) {
+    out << "Usage: " << program << " [help]";
+
+    for (OptionBase const& opt: opts) {
+        out << (opt.required() ? " [" : " [[") << opt.key() << "=]"
+            << opt.placeholder() << (opt.required() ? "" : "]");
+    }
+
+    for (OptionBase const& opt: kwopts) {
+        if (opt.required())
+            out << ' ' << opt.key() << '=' << opt.placeholder();
+        else if (is_bool(opt) && !static_cast<Option<bool> const&>(opt).get())
+            out << " [" << opt.key() << "]";
+        else
+            out << " [" << opt.key() << '=' << opt.placeholder() << "]";
+    }
+
+    out << std::endl;
+}
 
 template<>
 bool Option<StringView>::parse(StringView arg, std::ostream&) {
