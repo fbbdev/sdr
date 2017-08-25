@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <chrono>
 #include <complex>
 #include <iomanip>
 #include <iostream>
@@ -20,7 +21,7 @@ using namespace sdr;
 std::mutex buffer_lock;
 std::vector<std::complex<float>> buf;
 
-void processor(std::uint16_t id, bool tap) {
+void processor(std::uint16_t id, bool tap, bool throttle) {
     auto it = buf.begin();
 
     auto source = stdin_source();
@@ -39,7 +40,9 @@ void processor(std::uint16_t id, bool tap) {
         if (tap)
             source->copy(sink);
 
-        auto size = source->packet().count<std::complex<float>>();
+        auto duration = source->packet().duration;
+        auto pkt_size = source->packet().count<std::complex<float>>();
+        auto size = pkt_size;
 
         while (size && !source->end()) {
             buffer_lock.lock();
@@ -51,6 +54,10 @@ void processor(std::uint16_t id, bool tap) {
 
             if (it == buf.end())
                 it = buf.begin();
+
+            if (throttle && duration)
+                std::this_thread::sleep_for(
+                        std::chrono::nanoseconds(duration*read/pkt_size));
         }
     }
 }
@@ -77,7 +84,7 @@ int main(int argc, char* argv[]) {
     buf.resize(points);
     auto local_buf = buf;
 
-    std::thread proc(processor, id, tap);
+    std::thread proc(processor, id, tap, throttle);
     proc.detach();
 
     ui::View view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
