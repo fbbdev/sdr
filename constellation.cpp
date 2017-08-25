@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
 
         wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,mouse,focused](NVGcontext* vg, int width, int height) {
             std::ostringstream fmt;
-            fmt << std::defaultfloat << std::setprecision(3);
+            fmt << std::defaultfloat;
 
             bool showCursor = focused && (mouse.x > 0 && mouse.x < width)
                                       && (mouse.y > 0 && mouse.y < height);
@@ -157,7 +157,8 @@ int main(int argc, char* argv[]) {
             nvgStroke(vg);
 
             // draw lines every ~100px
-            auto grid_step = std::pow(2.0f, std::round(std::log2(view.local_delta_x(100))));
+            const auto grid_step = std::pow(2.0f, std::round(std::log2(view.local_delta_x(100))));
+            const auto grid_step_mag = std::floor(std::log10(grid_step));
 
             nvgFillColor(vg, nvgRGBA(50, 100, 50, 230));
             nvgStrokeColor(vg, nvgRGBA(50, 100, 50, 230));
@@ -182,7 +183,8 @@ int main(int argc, char* argv[]) {
                 nvgLineTo(vg, gx, height);
 
                 fmt.str(std::string());
-                fmt << x;
+                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(x))) - grid_step_mag) + 1))
+                    << x;
                 nvgText(vg, gx + 5, 5, fmt.str().c_str(), nullptr);
             }
 
@@ -204,7 +206,8 @@ int main(int argc, char* argv[]) {
                 nvgLineTo(vg, width, gy);
 
                 fmt.str(std::string());
-                fmt << y;
+                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(y))) - grid_step_mag) + 1))
+                    << y;
                 nvgText(vg, 5, gy - 5, fmt.str().c_str(), nullptr);
             }
 
@@ -258,9 +261,16 @@ int main(int argc, char* argv[]) {
                 nvgStroke(vg);
 
                 auto coord = view.local(mouse);
+                ui::Vec2 pixel_mag = {
+                    std::floor(std::log10(std::abs(view.local_delta_x(1)))),
+                    std::floor(std::log10(std::abs(view.local_delta_y(1))))
+                };
 
                 fmt.str(std::string());
-                fmt << coord.x << ((coord.y < 0) ? '-' : '+') << 'j' << std::abs(coord.y);
+                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(coord.x))) - pixel_mag.x) + 1))
+                    << coord.x
+                    << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(coord.y))) - pixel_mag.y) + 1))
+                    << ((coord.y < 0) ? '-' : '+') << 'j' << std::abs(coord.y);
 
                 bool left   = (width - mouse.x < 100),
                      bottom = (mouse.y < 50);
