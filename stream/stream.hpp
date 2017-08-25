@@ -87,21 +87,21 @@ public:
 
     virtual void drop();
 
-    virtual void pass(Sink& sink);
-    virtual void pass(FileSink& sink);
+    virtual void pass(Sink& sink, bool dump = false);
+    virtual void pass(FileSink& sink, bool dump = false);
 
-    virtual void copy(Sink& sink);
-    virtual void copy(FileSink& sink);
+    virtual void copy(Sink& sink, bool dump = false);
+    virtual void copy(FileSink& sink, bool dump = false);
 
-    void pass(Sink* sink);
-    void copy(Sink* sink);
+    void pass(Sink* sink, bool dump = false);
+    void copy(Sink* sink, bool dump = false);
 
-    void pass(std::unique_ptr<Sink> const& sink) {
-        pass(sink.get());
+    void pass(std::unique_ptr<Sink> const& sink, bool dump = false) {
+        pass(sink.get(), dump);
     }
 
-    void copy(std::unique_ptr<Sink> const& sink) {
-        copy(sink.get());
+    void copy(std::unique_ptr<Sink> const& sink, bool dump = false) {
+        copy(sink.get(), dump);
     }
 
 protected:
@@ -121,11 +121,11 @@ public:
 
     void drop() override final;
 
-    void pass(Sink& sink) override final;
-    void pass(FileSink& sink) override final;
+    void pass(Sink& sink, bool dump = false) override final;
+    void pass(FileSink& sink, bool dump = false) override final;
 
-    void copy(Sink& sink) override final;
-    void copy(FileSink& sink) override final;
+    void copy(Sink& sink, bool dump = false) override final;
+    void copy(FileSink& sink, bool dump = false) override final;
 };
 
 
@@ -181,18 +181,18 @@ public:
 };
 
 
-inline void Source::pass(Sink* sink) {
+inline void Source::pass(Sink* sink, bool dump) {
     if (FileSink* fsink = dynamic_cast<FileSink*>(sink))
-        pass(*fsink);
+        pass(*fsink, dump);
     else
-        pass(*sink);
+        pass(*sink, dump);
 }
 
-inline void Source::copy(Sink* sink) {
+inline void Source::copy(Sink* sink, bool dump) {
     if (FileSink* fsink = dynamic_cast<FileSink*>(sink))
-        copy(*fsink);
+        copy(*fsink, dump);
     else
-        copy(*sink);
+        copy(*sink, dump);
 }
 
 

@@ -181,12 +181,12 @@ void Source::drop() {
     read += r;
 }
 
-void Source::pass(Sink& sink) {
+void Source::pass(Sink& sink, bool dump) {
     // Cannot pass packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
         // Error on sink
         drop();
         return;
@@ -216,12 +216,12 @@ void Source::pass(Sink& sink) {
         drop();
 }
 
-void Source::pass(FileSink& sink) {
+void Source::pass(FileSink& sink, bool dump) {
     // Cannot pass packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
         // Error on sink
         drop();
         return;
@@ -253,12 +253,12 @@ void Source::pass(FileSink& sink) {
     fdatasync(sink.fd);
 }
 
-void Source::copy(Sink& sink) {
+void Source::copy(Sink& sink, bool dump) {
     // Cannot copy packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
         // Error on sink
         return;
 
@@ -294,12 +294,12 @@ void Source::copy(Sink& sink) {
     }
 }
 
-void Source::copy(FileSink& sink) {
+void Source::copy(FileSink& sink, bool dump) {
     // Cannot copy packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
         // Error on sink
         return;
 
@@ -337,12 +337,12 @@ void FileSource::drop() {
     read = pkt.size;
 }
 
-void FileSource::pass(Sink& sink) {
+void FileSource::pass(Sink& sink, bool dump) {
     // Cannot pass packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
         // Error on sink
         drop();
         return;
@@ -355,12 +355,12 @@ void FileSource::pass(Sink& sink) {
         drop();
 }
 
-void FileSource::pass(FileSink& sink) {
+void FileSource::pass(FileSink& sink, bool dump) {
     // Cannot pass packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
         // Error on sink
         drop();
         return;
@@ -375,12 +375,12 @@ void FileSource::pass(FileSink& sink) {
     fdatasync(sink.fd);
 }
 
-void FileSource::copy(Sink& sink) {
+void FileSource::copy(Sink& sink, bool dump) {
     // Cannot copy packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
         // Error on sink
         return;
 
@@ -388,12 +388,12 @@ void FileSource::copy(Sink& sink) {
     lseek(fd, -sent, SEEK_CUR);
 }
 
-void FileSource::copy(FileSink& sink) {
+void FileSource::copy(FileSink& sink, bool dump) {
     // Cannot copy packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
+    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
         // Error on sink
         return;
 
