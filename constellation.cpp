@@ -95,11 +95,12 @@ int main(int argc, char* argv[]) {
     Option<std::uintmax_t> points("points", Placeholder("POINTS"), 1000);
     Option<bool> tap("tap", false);
     Option<bool> throttle("throttle", false);
+    Option<std::string> title("title", "Constellation");
 
-    if (!opt::parse({ id }, { points, tap, throttle }, argv, argv + argc))
+    if (!opt::parse({ id }, { points, tap, throttle, title }, argv, argv + argc))
         return -1;
 
-    auto wnd = ui::Window::create("Constellation", 300, 300);
+    auto wnd = ui::Window::create(title.get().c_str(), 300, 300);
 
     if (!wnd) {
         std::cerr << "Fatal error: cannot create window" << std::endl;
