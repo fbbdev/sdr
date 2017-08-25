@@ -136,18 +136,20 @@ public:
     }
 
     AppliedView compute(int width, int height) const {
-        auto mm = (height > width) ? std::pair<float, float>{ height, width }
-                                   : std::pair<float, float>{ width, height };
+        auto mm = (width < height) ? std::pair<float, float>{ width, height }
+                                   : std::pair<float, float>{ height, width };
 
         AppliedView v = {
             ((iso == NonIsometric) ? Vec2{float(width), float(height)} :
                  (iso == IsometricFitMin) ? Vec2{mm.first, mm.first}
                                           : Vec2{mm.second, mm.second}),
-            { size_.x/2.0f - center_.x, size_.y/2.0f - center_.y }
+            {}
         };
 
         v.s.x /= size_.x;
         v.s.y /= size_.y;
+
+        v.t = nk_vec2_sub(v.local_delta({ width/2.0f, height/2.0f }), center_);
 
         return v;
     }
