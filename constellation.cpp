@@ -1,3 +1,4 @@
+#include "signal.hpp"
 #include "stream/stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
@@ -7,7 +8,6 @@
 #include <cmath>
 #include <algorithm>
 #include <chrono>
-#include <complex>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -19,7 +19,7 @@
 using namespace sdr;
 
 std::mutex buffer_lock;
-std::vector<std::complex<float>> buf;
+std::vector<Sample> buf;
 
 void processor(std::uint16_t id, bool tap, bool throttle) {
     auto it = buf.begin();
@@ -28,7 +28,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
     auto sink = stdout_sink();
 
     while (source->next()) {
-        if (source->packet().id != id || source->packet().content != Packet::ComplexTimeSignal) {
+        if (source->packet().id != id || (source->packet().content != Packet::TimeSignal &&
+                                          source->packet().content != Packet::ComplexTimeSignal)) {
             if (tap)
                 source->pass(sink);
             else
@@ -40,24 +41,46 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
         if (tap)
             source->copy(sink);
 
-        auto duration = source->packet().duration;
-        auto pkt_size = source->packet().count<std::complex<float>>();
-        auto size = pkt_size;
+        const auto duration = source->packet().duration;
 
-        while (size && !source->end()) {
-            buffer_lock.lock();
-            auto read = source->recv(&*it, std::min(size, std::uint32_t(buf.end() - it)));
-            buffer_lock.unlock();
+        if (source->packet().content == Packet::TimeSignal) {
+            auto data = source->recv<RealSample>();
+            auto data_it = data.begin(), data_end = data.end();
 
-            size -= read;
-            it += read;
+            while (data_it != data_end) {
+                buffer_lock.lock();
+                auto copied = std::copy_n(data_it, std::min(data_end - data_it, buf.end() - it), it) - it;
+                buffer_lock.unlock();
 
-            if (it == buf.end())
-                it = buf.begin();
+                data_it += copied;
+                it += copied;
 
-            if (throttle && duration)
-                std::this_thread::sleep_for(
-                        std::chrono::nanoseconds(duration*read/pkt_size));
+                if (it == buf.end())
+                    it = buf.begin();
+
+                if (throttle && duration)
+                    std::this_thread::sleep_for(
+                            std::chrono::nanoseconds(duration*copied/data.size()));
+            }
+        } else {
+            const auto pkt_size = source->packet().count<Sample>();
+            auto size = pkt_size;
+
+            while (size && !source->end()) {
+                buffer_lock.lock();
+                auto read = source->recv(&*it, std::min(size, std::uint32_t(buf.end() - it)));
+                buffer_lock.unlock();
+
+                size -= read;
+                it += read;
+
+                if (it == buf.end())
+                    it = buf.begin();
+
+                if (throttle && duration)
+                    std::this_thread::sleep_for(
+                            std::chrono::nanoseconds(duration*read/pkt_size));
+            }
         }
     }
 }
