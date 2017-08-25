@@ -25,7 +25,7 @@ else
     add_project_link_arguments('-fuse-ld=gold',
                                language: ['c', 'cpp'])
 
-    if release_build 
+    if release_build
         add_project_arguments('-ffast-math', language: ['c', 'cpp'])
         add_project_link_arguments('-Wl,-O3', '-O3', '-ffast-math',
                                    language: ['c', 'cpp'])
@@ -45,7 +45,7 @@ block_deps = [math_lib, thread_lib]
 blocks = [
     ['constellation', [ui_lib]],
     ['signal'],
-    ['stream_debug'],
+    ['inspect'],
     ['throttle'],
 ]
 
