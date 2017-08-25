@@ -28,6 +28,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
     auto sink = stdout_sink();
 
     while (source->next()) {
+        auto arrival = std::chrono::high_resolution_clock::now();
+
         if (source->packet().id != id || (source->packet().content != Packet::TimeSignal &&
                                           source->packet().content != Packet::ComplexTimeSignal)) {
             if (tap)
@@ -59,8 +61,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
                     it = buf.begin();
 
                 if (throttle && duration)
-                    std::this_thread::sleep_for(
-                            std::chrono::nanoseconds(duration*copied/data.size()));
+                    std::this_thread::sleep_until(
+                        arrival + std::chrono::nanoseconds(duration*(data_it - data.begin())/data.size()));
             }
         } else {
             const auto pkt_size = source->packet().count<Sample>();
@@ -78,8 +80,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
                     it = buf.begin();
 
                 if (throttle && duration)
-                    std::this_thread::sleep_for(
-                            std::chrono::nanoseconds(duration*read/pkt_size));
+                    std::this_thread::sleep_until(
+                        arrival + std::chrono::nanoseconds(duration*(pkt_size - size)/pkt_size));
             }
         }
     }

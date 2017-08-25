@@ -23,14 +23,13 @@ int main(int argc, char* argv[]) {
     auto sink = stdout_sink();
 
     while (source->next()) {
+        auto arrival = std::chrono::high_resolution_clock::now();
+
         source->pass(sink);
 
-        if (id.is_set() && source->packet().id != id)
-            continue;
-
-        if (source->packet().duration)
-            std::this_thread::sleep_for(
-                std::chrono::nanoseconds(source->packet().duration));
+        if (!(id.is_set() && source->packet().id != id) && source->packet().duration)
+            std::this_thread::sleep_until(
+                arrival + std::chrono::nanoseconds(source->packet().duration));
     }
 
     return 0;
