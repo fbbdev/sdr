@@ -1,7 +1,8 @@
-#include "options/options.hpp"
 #include "stream/stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
+
+#include "opt/opt.hpp"
 
 #include <cmath>
 #include <algorithm>

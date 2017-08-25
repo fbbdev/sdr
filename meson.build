@@ -29,7 +29,7 @@ else
     endif
 endif
 
-subdir('options')
+subdir('opt')
 subdir('stream')
 subdir('ui')
 
@@ -51,5 +51,6 @@ foreach b : blocks
 
     executable(b[0], b[0] + '.cpp',
                link_with: [options_lib, stream_lib, libs],
+               link_with: [opt_lib, stream_lib, libs],
                dependencies: block_deps)
 endforeach

@@ -1,10 +1,33 @@
-#include "options.hpp"
+/**
+ * The MIT License
+ *
+ * Copyright (c) 2017 Fabio Massaioli
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#include "opt.hpp"
 
 #include <cctype>
 #include <iterator>
 
-using namespace sdr;
-using namespace sdr::opt;
+using namespace opt;
 
 static const std::intmax_t int_powers[] = {
     1, 10, 100,
@@ -55,7 +78,7 @@ static bool is_bool(OptionBase const* opt) {
 }
 
 
-StringView sdr::opt::trim(StringView s) {
+StringView opt::trim(StringView s) {
     auto start = s.find_first_not_of(" \t\f\r\n");
     if (start == StringView::npos)
         return StringView();
@@ -67,7 +90,7 @@ StringView sdr::opt::trim(StringView s) {
     return s.substr(start, end);
 }
 
-std::string sdr::opt::to_lower(StringView s) {
+std::string opt::to_lower(StringView s) {
     std::string result;
     std::transform(s.begin(), s.end(), std::back_inserter(result), ::tolower);
     return result;
@@ -77,10 +100,10 @@ std::string sdr::opt::to_lower(StringView s) {
 OptionBase::~OptionBase() {}
 
 
-bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> opts,
-                     std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
-                     char const* const* first, char const* const* last,
-                     std::ostream& err) {
+bool opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> opts,
+                std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
+                char const* const* first, char const* const* last,
+                std::ostream& err) {
     std::map<StringView, OptionBase*> kwmap;
 
     for (auto& opt: opts)
@@ -129,11 +152,11 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
     return true;
 }
 
-bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> opts,
-                     std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
-                     std::vector<StringView>& ignored,
-                     char const* const* first, char const* const* last,
-                     std::ostream& err) {
+bool opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> opts,
+                std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
+                std::vector<StringView>& ignored,
+                char const* const* first, char const* const* last,
+                std::ostream& err) {
     std::map<StringView, OptionBase*> kwmap;
 
     for (auto& opt: opts)
@@ -186,10 +209,10 @@ bool sdr::opt::parse(std::initializer_list<std::reference_wrapper<OptionBase>> o
     return true;
 }
 
-void sdr::opt::usage(StringView program,
-                     std::initializer_list<std::reference_wrapper<OptionBase>> opts,
-                     std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
-                     std::ostream& out) {
+void opt::usage(StringView program,
+                std::initializer_list<std::reference_wrapper<OptionBase>> opts,
+                std::initializer_list<std::reference_wrapper<OptionBase>> kwopts,
+                std::ostream& out) {
     out << "Usage: " << program << " [help]";
 
     for (OptionBase const& opt: opts) {
