@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <algorithm>
+#include <iostream>
 
 using namespace sdr;
 
@@ -67,23 +68,6 @@ static std::size_t sendfile_all(int src, int dst, std::size_t size) {
     } while (sent < size);
 
     return sent;
-}
-
-static bool vmsplice_all(int fd, std::uint8_t* data, std::size_t size) {
-    auto p = data, end = data + size;
-
-    ssize_t w = 0;
-
-    do {
-        iovec v = { p, size_t(end - p) };
-        w = vmsplice(fd, &v, 1, 0);
-        if (w < 0)
-            break;
-
-        p += w;
-    } while (p != end && w > 0);
-
-    return (p == end);
 }
 
 static bool write_all(int fd, std::uint8_t const* data, std::size_t size) {
@@ -195,7 +179,7 @@ void Source::pass(Sink& sink, bool dump) {
     ssize_t r = 0;
 
     if (buffer.size()) {
-        if (!vmsplice_all(sink.fd, buffer.data(), buffer.size())) {
+        if (!write_all(sink.fd, buffer.data(), buffer.size())) {
             // Error on sink
             drop();
             return;
@@ -265,7 +249,7 @@ void Source::copy(Sink& sink, bool dump) {
     ssize_t r = 0;
 
     if (buffer.size()) {
-        if (!vmsplice_all(sink.fd, buffer.data(), buffer.size()))
+        if (!write_all(sink.fd, buffer.data(), buffer.size()))
             // Error on sink
             return;
 
@@ -405,7 +389,7 @@ void FileSource::copy(FileSink& sink, bool dump) {
 
 void Sink::send(Packet pkt, std::uint8_t const* data) {
     write_all(fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet));
-    vmsplice_all(fd, const_cast<std::uint8_t*>(data), pkt.size);
+    write_all(fd, const_cast<std::uint8_t*>(data), pkt.size);
 }
 
 void FileSink::send(Packet pkt, std::uint8_t const* data) {
