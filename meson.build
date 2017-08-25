@@ -7,25 +7,32 @@ thread_lib = dependency('threads')
 
 vector = get_option('vector')
 if vector != ''
-    add_global_arguments(vector, language: ['c', 'cpp'])
-    add_global_link_arguments(vector, language: ['c', 'cpp'])
+    add_project_arguments(vector, language: ['c', 'cpp'])
+    add_project_link_arguments(vector, language: ['c', 'cpp'])
 endif
+
+release_build = (get_option('buildtype') == 'release')
 
 if cpp.get_id() == 'msvc'
     relax = '/w'
+
+    if release_build
+        add_project_arguments('/fp:fast', language: ['c', 'cpp'])
+    endif
 else
     relax = '-w'
 
-    add_global_link_arguments('-fuse-ld=gold',
-                              language: ['c', 'cpp'])
+    add_project_link_arguments('-fuse-ld=gold',
+                               language: ['c', 'cpp'])
 
-    if get_option('buildtype') == 'release'
-        add_global_link_arguments('-Wl,-O3', '-O3',
-                                  language: ['c', 'cpp'])
+    if release_build 
+        add_project_arguments('-ffast-math', language: ['c', 'cpp'])
+        add_project_link_arguments('-Wl,-O3', '-O3', '-ffast-math',
+                                   language: ['c', 'cpp'])
     endif
     if cpp.get_id() != 'clang'
-        add_global_link_arguments('-fuse-linker-plugin',
-                                  language: ['c', 'cpp'])
+        add_project_link_arguments('-fuse-linker-plugin',
+                                   language: ['c', 'cpp'])
     endif
 endif
 
@@ -50,7 +57,6 @@ foreach b : blocks
     endif
 
     executable(b[0], b[0] + '.cpp',
-               link_with: [options_lib, stream_lib, libs],
                link_with: [opt_lib, stream_lib, libs],
                dependencies: block_deps)
 endforeach
