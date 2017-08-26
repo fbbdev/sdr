@@ -44,10 +44,10 @@ block_deps = [math_lib, thread_lib]
 
 blocks = [
     ['constellation', [ui_lib]],
-    ['dump'],
     ['gen'],
     ['inspect'],
     ['throttle'],
+    ['unwrap'],
 ]
 
 foreach b : blocks
