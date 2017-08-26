@@ -87,7 +87,15 @@ static bool write_all(int fd, std::uint8_t const* data, std::size_t size) {
 }
 
 
-bool Source::next() {
+bool sdr::is_fifo(int fd) {
+    struct stat s{};
+    fstat(fd, &s);
+
+    return (s.st_mode & S_IFMT) == S_IFIFO || (s.st_mode & S_IFMT) == S_IFSOCK;
+}
+
+
+bool Source::next(Packet rawpkt) {
     std::uint8_t pkt_data[sizeof(Packet)];
 
     if (eof) {
@@ -98,13 +106,30 @@ bool Source::next() {
     drop();
     read = 0;
 
-    if (read_all(fd, pkt_data, sizeof(Packet)) < sizeof(Packet)) {
-        pkt = Packet();
-        eof = true;
-        return false;
-    }
+    if (!raw) {
+        if (read_all(fd, pkt_data, sizeof(Packet)) < sizeof(Packet)) {
+            pkt = Packet();
+            eof = true;
+            return false;
+        }
 
-    pkt = *reinterpret_cast<Packet*>(pkt_data);
+        pkt = *reinterpret_cast<Packet*>(pkt_data);
+    } else {
+        pkt = rawpkt;
+
+        if (!fifo) {
+            auto pos = lseek(fd, 0, SEEK_CUR);
+            auto size = lseek(fd, 0, SEEK_END);
+            lseek(fd, pos, SEEK_SET);
+
+            if (pos == size) {
+                pkt = Packet();
+                return false;
+            }
+
+            pkt.size = std::uint32_t(std::min(size - pos, ssize_t(rawpkt.size)));
+        }
+    }
 
     return true;
 }
@@ -141,36 +166,41 @@ std::uint32_t Source::recv(std::uint8_t* data, std::uint32_t size) {
 void Source::drop() {
     auto size = pkt.size - read;
 
-    if (size == 0 || eof) {
-        buf_pos = 0;
-        buffer.resize(0);
-        return;
+    if (fifo) {
+        if (size == 0 || eof) {
+            buf_pos = 0;
+            buffer.resize(0);
+            return;
+        }
+
+        ssize_t r = 0;
+
+        if (buf_pos != buffer.size()) {
+            r = buffer.size() - buf_pos;
+            buf_pos = 0;
+            buffer.resize(0);
+        }
+
+        if (r < size) {
+            r += splice_all(fd, devnull, size - r);
+
+            if (r < size)
+                eof = true;
+        }
+
+        read += r;
+    } else {
+        lseek(fd, size, SEEK_CUR);
+        read = pkt.size;
     }
-
-    ssize_t r = 0;
-
-    if (buf_pos != buffer.size()) {
-        r = buffer.size() - buf_pos;
-        buf_pos = 0;
-        buffer.resize(0);
-    }
-
-    if (r < size) {
-        r += splice_all(fd, devnull, size - r);
-
-        if (r < size)
-            eof = true;
-    }
-
-    read += r;
 }
 
-void Source::pass(Sink& sink, bool dump) {
+void Source::pass(Sink& sink) {
     // Cannot pass packet if data has been already read
     if (read != 0 || eof)
         return;
 
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
+    if (!sink.raw && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
         // Error on sink
         drop();
         return;
@@ -189,117 +219,67 @@ void Source::pass(Sink& sink, bool dump) {
         buf_pos = 0;
         buffer.resize(0);
     }
-
-    if (r < pkt.size)
-        r += splice_all(fd, sink.fd, pkt.size - r);
-
-    read = r;
-
-    if (r < pkt.size)
-        // Possible error on sink during splice
-        drop();
-}
-
-void Source::pass(FileSink& sink, bool dump) {
-    // Cannot pass packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
-        // Error on sink
-        drop();
-        return;
-    }
-
-    ssize_t r = 0;
-
-    if (buffer.size()) {
-        if (!write_all(sink.fd, buffer.data(), buffer.size())) {
-            // Error on sink
-            drop();
-            return;
-        }
-
-        r = buffer.size();
-        buf_pos = 0;
-        buffer.resize(0);
-    }
-
-    if (r < pkt.size)
-        r += splice_all(fd, sink.fd, pkt.size - r);
-
-    read = r;
-
-    if (r < pkt.size)
-        // Possible error on sink during splice
-        drop();
-
-    fdatasync(sink.fd);
-}
-
-void Source::copy(Sink& sink, bool dump) {
-    // Cannot copy packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
-        // Error on sink
-        return;
-
-    ssize_t r = 0;
-
-    if (buffer.size()) {
-        if (!write_all(sink.fd, buffer.data(), buffer.size()))
-            // Error on sink
-            return;
-
-        r = buffer.size();
-    }
-
-    buf_pos = 0;
-
-    while (r < pkt.size) {
-        ssize_t copied = tee(fd, sink.fd, pkt.size - r, 0);
-
-        if (copied <= 0)
-            // EOF, or an error occurred
-            return;
-
-        r += copied;
-
-        if (r < pkt.size) {
-            auto old = buffer.size();
-            buffer.resize(old + copied);
-
-            if (read_all(fd, buffer.data() + old, copied) < std::size_t(copied))
-                // Error on source
-                return;
-        }
-    }
-}
-
-void Source::copy(FileSink& sink, bool dump) {
-    // Cannot copy packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
-        // Error on sink
-        return;
-
-    std::size_t r = 0;
-
-    if (buffer.size()) {
-        if (!write_all(sink.fd, buffer.data(), buffer.size()))
-            // Error on sink
-            return;
-
-        r = buffer.size();
-    }
-
-    buf_pos = 0;
 
     if (r < pkt.size) {
+        if (fifo || sink.fifo)
+            r += splice_all(fd, sink.fd, pkt.size - r);
+        else
+            r += sendfile_all(fd, sink.fd, pkt.size - r);
+    }
+
+    read = r;
+
+    if (r < pkt.size)
+        // Possible error on sink during splice/sendfile
+        drop();
+
+    if (!sink.fifo)
+        fdatasync(sink.fd);
+}
+
+void Source::copy(Sink& sink) {
+    // Cannot copy packet if data has been already read
+    if (read != 0 || eof)
+        return;
+
+    if (!sink.raw && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
+        // Error on sink
+        return;
+
+    ssize_t r = 0;
+
+    if (buffer.size()) {
+        if (!write_all(sink.fd, buffer.data(), buffer.size()))
+            // Error on sink
+            return;
+
+        r = buffer.size();
+    }
+
+    buf_pos = 0;
+
+    if (fifo && sink.fifo) {
+        // source and sink are both FIFO, use tee
+        while (r < pkt.size) {
+            ssize_t copied = tee(fd, sink.fd, pkt.size - r, 0);
+
+            if (copied <= 0)
+                // EOF, or an error occurred
+                return;
+
+            r += copied;
+
+            if (r < pkt.size) {
+                auto old = buffer.size();
+                buffer.resize(old + copied);
+
+                if (read_all(fd, buffer.data() + old, copied) < std::size_t(copied))
+                    // Error on source
+                    return;
+            }
+        }
+    } else if (fifo && r < pkt.size) {
+        // sink is not FIFO, buffer data before writing
         auto old = buffer.size();
         auto new_ = pkt.size - r;
         buffer.resize(old + new_);
@@ -310,98 +290,27 @@ void Source::copy(FileSink& sink, bool dump) {
         if (r < buffer.size())
             // EOF, or an error occurred
             buffer.resize(r);
+    } else {
+        // source is not FIFO, move data and seek back
+        if (sink.fifo)
+            r = splice_all(fd, sink.fd, pkt.size);
+        else
+            r = sendfile_all(fd, sink.fd, pkt.size);
+
+        lseek(fd, -r, SEEK_CUR);
     }
 
-    fdatasync(sink.fd);
-}
-
-
-void FileSource::drop() {
-    lseek(fd, pkt.size - read, SEEK_CUR);
-    read = pkt.size;
-}
-
-void FileSource::pass(Sink& sink, bool dump) {
-    // Cannot pass packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet))) {
-        // Error on sink
-        drop();
-        return;
-    }
-
-    read = splice_all(fd, sink.fd, pkt.size);
-
-    if (read < pkt.size)
-        // Possible error on sink during splice
-        drop();
-}
-
-void FileSource::pass(FileSink& sink, bool dump) {
-    // Cannot pass packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet))) {
-        // Error on sink
-        drop();
-        return;
-    }
-
-    read = sendfile_all(fd, sink.fd, pkt.size);
-
-    if (read < pkt.size)
-        // Possible error on sink during splice
-        drop();
-
-    fdatasync(sink.fd);
-}
-
-void FileSource::copy(Sink& sink, bool dump) {
-    // Cannot copy packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet)))
-        // Error on sink
-        return;
-
-    auto sent = splice_all(fd, sink.fd, pkt.size);
-    lseek(fd, -sent, SEEK_CUR);
-}
-
-void FileSource::copy(FileSink& sink, bool dump) {
-    // Cannot copy packet if data has been already read
-    if (read != 0 || eof)
-        return;
-
-    if (!dump && !write_all(sink.fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet)))
-        // Error on sink
-        return;
-
-    auto sent = sendfile_all(fd, sink.fd, pkt.size);
-    lseek(fd, -sent, SEEK_CUR);
-    fdatasync(sink.fd);
+    if (!sink.fifo)
+        fdatasync(sink.fd);
 }
 
 
 void Sink::send(Packet pkt, std::uint8_t const* data) {
-    write_all(fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet));
+    if (!raw)
+        write_all(fd, reinterpret_cast<std::uint8_t*>(&pkt), sizeof(Packet));
+
     write_all(fd, const_cast<std::uint8_t*>(data), pkt.size);
-}
 
-void FileSink::send(Packet pkt, std::uint8_t const* data) {
-    write_all(fd, reinterpret_cast<std::uint8_t const*>(&pkt), sizeof(Packet));
-    write_all(fd, data, pkt.size);
-    fdatasync(fd);
-}
-
-
-bool sdr::is_fifo(int fd) {
-    struct stat s{};
-    fstat(fd, &s);
-
-    return s.st_mode & S_IFIFO;
+    if (!fifo)
+        fdatasync(fd);
 }

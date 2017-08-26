@@ -38,18 +38,18 @@ int main(int argc, char* argv[]) {
     if (!opt::parse({ id }, {}, argv, argv + argc))
         return -1;
 
-    auto source = stdin_source();
-    auto sink = stdout_sink();
+    Source source;
+    Sink sink;
 
     std::vector<std::uint8_t> buf;
 
-    while (source->next()) {
-        if (id.is_set() && source->packet().id != id) {
-            source->pass(sink);
+    while (source.next()) {
+        if (id.is_set() && source.packet().id != id) {
+            source.pass(sink);
             continue;
         }
 
-        auto pkt = source->packet();
+        auto pkt = source.packet();
         std::cerr << "Packet{ "
                       << "id: "       << pkt.id       << ", "
                       << "content: "  << pkt.content  << ", "
@@ -58,10 +58,10 @@ int main(int argc, char* argv[]) {
                   << " }";
 
         buf.resize(pkt.size);
-        auto r = source->recv(buf);
+        auto r = source.recv(buf);
         std::cerr << " " << r << " bytes received" << std::endl;
 
-        sink->send(pkt, buf);
+        sink.send(pkt, buf);
     }
 
     return 0;

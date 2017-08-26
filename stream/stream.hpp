@@ -1,9 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <chrono>
 #include <complex>
-#include <memory>
 #include <vector>
 
 namespace sdr
@@ -36,18 +34,26 @@ struct alignas(std::complex<double>) Packet {
     }
 };
 
+
+bool is_fifo(int fd);
+
+
+enum RawTag {
+    Raw,
+};
+
 class Source;
 class FileSource;
 class Sink;
-class FileSink;
 
 class Source {
 public:
-    explicit Source(int fd_ = 0) : fd(fd_) {}
+    explicit Source(int fd_ = 0) : fd(fd_), fifo(is_fifo(fd_)) {}
 
-    virtual ~Source() {}
+    explicit Source(RawTag, int fd_ = 0)
+        : fd(fd_), raw(true), fifo(is_fifo(fd_)) {}
 
-    bool next();
+    bool next(Packet rawpkt = {});
 
     bool end() const noexcept {
         return eof;
@@ -57,8 +63,8 @@ public:
         return pkt;
     }
 
-    template<typename T>
-    std::vector<T> recv() {
+    template<typename T, typename Alloc = std::allocator<T>>
+    std::vector<T, Alloc> recv() {
         if (!pkt.compatible<T>())
             return std::vector<T>();
 
@@ -70,8 +76,8 @@ public:
         return data;
     }
 
-    template<typename T>
-    std::uint32_t recv(std::vector<T>& data) {
+    template<typename T, typename Alloc>
+    std::uint32_t recv(std::vector<T, Alloc>& data) {
         return recv(data.data(), data.size());
     }
 
@@ -85,27 +91,15 @@ public:
 
     std::uint32_t recv(std::uint8_t* data, std::uint32_t size = 0);
 
-    virtual void drop();
+    void drop();
 
-    virtual void pass(Sink& sink, bool dump = false);
-    virtual void pass(FileSink& sink, bool dump = false);
-
-    virtual void copy(Sink& sink, bool dump = false);
-    virtual void copy(FileSink& sink, bool dump = false);
-
-    void pass(Sink* sink, bool dump = false);
-    void copy(Sink* sink, bool dump = false);
-
-    void pass(std::unique_ptr<Sink> const& sink, bool dump = false) {
-        pass(sink.get(), dump);
-    }
-
-    void copy(std::unique_ptr<Sink> const& sink, bool dump = false) {
-        copy(sink.get(), dump);
-    }
+    void pass(Sink& sink);
+    void copy(Sink& sink);
 
 protected:
     int fd;
+    bool raw = false;
+    bool fifo;
 
     Packet pkt{};
     std::uint32_t read = 0;
@@ -115,39 +109,28 @@ protected:
     std::uint32_t buf_pos = 0;
 };
 
-class FileSource : public Source {
-public:
-    using Source::Source;
-
-    void drop() override final;
-
-    void pass(Sink& sink, bool dump = false) override final;
-    void pass(FileSink& sink, bool dump = false) override final;
-
-    void copy(Sink& sink, bool dump = false) override final;
-    void copy(FileSink& sink, bool dump = false) override final;
-};
-
 
 class Sink {
 public:
-    explicit Sink(int fd_ = 1) : fd(fd_) {}
+    explicit Sink(int fd_ = 1) : fd(fd_), fifo(is_fifo(fd_)) {}
 
-    virtual ~Sink() {}
+    explicit Sink(RawTag, int fd_ = 1)
+        : fd(fd_), raw(true), fifo(is_fifo(fd_))
+        {}
 
-    template<typename T>
-    void send(std::uint16_t id, Packet::Content content, std::vector<T> const& data) {
+    template<typename T, typename Alloc>
+    void send(std::uint16_t id, Packet::Content content, std::vector<T, Alloc> const& data) {
         send(id, content, 0, data);
     }
 
-    template<typename T>
+    template<typename T, typename Alloc>
     void send(std::uint16_t id, Packet::Content content,
-              std::uint64_t duration, std::vector<T> const& data) {
+              std::uint64_t duration, std::vector<T, Alloc> const& data) {
         send({ id, content, 0, duration }, data);
     }
 
-    template<typename T>
-    void send(Packet pkt, std::vector<T> const& data) {
+    template<typename T, typename Alloc>
+    void send(Packet pkt, std::vector<T, Alloc> const& data) {
         send(pkt, data.data(), data.size());
     }
 
@@ -159,60 +142,15 @@ public:
         send(pkt, reinterpret_cast<std::uint8_t const*>(data));
     }
 
-    virtual void send(Packet pkt, std::uint8_t const* data);
+    void send(Packet pkt, std::uint8_t const* data);
 
 protected:
     friend class Source;
     friend class FileSource;
 
     int fd = 0;
+    bool raw = false;
+    bool fifo;
 };
-
-class FileSink : public Sink {
-public:
-    using Sink::Sink;
-
-    using Sink::send;
-
-    void send(Packet pkt, std::uint8_t const* data) override final;
-
-    friend class Source;
-    friend class FileSource;
-};
-
-
-inline void Source::pass(Sink* sink, bool dump) {
-    if (FileSink* fsink = dynamic_cast<FileSink*>(sink))
-        pass(*fsink, dump);
-    else
-        pass(*sink, dump);
-}
-
-inline void Source::copy(Sink* sink, bool dump) {
-    if (FileSink* fsink = dynamic_cast<FileSink*>(sink))
-        copy(*fsink, dump);
-    else
-        copy(*sink, dump);
-}
-
-
-bool is_fifo(int fd);
-
-inline bool stdin_is_fifo() {
-    return is_fifo(0);
-}
-
-inline bool stdout_is_fifo() {
-    return is_fifo(1);
-}
-
-
-inline std::unique_ptr<Source> stdin_source() {
-    return std::unique_ptr<Source>(stdin_is_fifo() ? new Source(0) : new FileSource(0));
-}
-
-inline std::unique_ptr<Sink> stdout_sink() {
-    return std::unique_ptr<Sink>(stdout_is_fifo() ? new Sink(1) : new FileSink(1));
-}
 
 } /* namespace sdr */

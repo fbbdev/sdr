@@ -19,17 +19,17 @@ int main(int argc, char* argv[]) {
     if (!opt::parse({ id }, {}, argv, argv + argc))
         return -1;
 
-    auto source = stdin_source();
-    auto sink = stdout_sink();
+    Source source;
+    Sink sink;
 
-    while (source->next()) {
+    while (source.next()) {
         auto arrival = std::chrono::high_resolution_clock::now();
 
-        source->pass(sink);
+        source.pass(sink);
 
-        if (!(id.is_set() && source->packet().id != id) && source->packet().duration)
+        if (!(id.is_set() && source.packet().id != id) && source.packet().duration)
             std::this_thread::sleep_until(
-                arrival + std::chrono::nanoseconds(source->packet().duration));
+                arrival + std::chrono::nanoseconds(source.packet().duration));
     }
 
     return 0;

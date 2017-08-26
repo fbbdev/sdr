@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 
     const float phi_incr = kfr::fract(cycles_per_sample * block_size);
 
-    auto sink = stdout_sink();
+    Sink sink;
     const Packet pkt = {
         std::uint16_t(id), (mode == Real) ? Packet::TimeSignal : Packet::ComplexTimeSignal,
         std::uint32_t(block_size * ((mode == Real) ? sizeof(RealSample) : sizeof(Sample))),
@@ -100,35 +100,35 @@ int main(int argc, char* argv[]) {
                 for (;;) {
                     block = A*kfr::sinenorm(phi + 0.25f + cycles_per_sample*kfr::counter());
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Sine:
                 for (;;) {
                     block = A*kfr::sinenorm(phi + cycles_per_sample*kfr::counter());
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Square:
                 for (;;) {
                     block = A*kfr::squarenorm(phi + cycles_per_sample*kfr::counter());
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Triangle:
                 for (;;) {
                     block = A*kfr::trianglenorm(phi + cycles_per_sample*kfr::counter());
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Sawtooth:
                 for (;;) {
                     block = A*kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter());
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
         }
@@ -143,14 +143,14 @@ int main(int argc, char* argv[]) {
                 for (;;) {
                     block = A*kfr::cexp(j2pi * (phi + cycles_per_sample*kfr::counter()));
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Sine:
                 for (;;) {
                     block = A*kfr::cexp(j2pi * (phi - 0.25f + cycles_per_sample*kfr::counter()));
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Square:
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
                     block = A*(kfr::squarenorm(phi + cycles_per_sample*kfr::counter()) +
                                J*kfr::squarenorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Triangle:
@@ -166,7 +166,7 @@ int main(int argc, char* argv[]) {
                     block = A*(kfr::trianglenorm(phi + cycles_per_sample*kfr::counter()) +
                                J*kfr::trianglenorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
             case Sawtooth:
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
                     block = A*(kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter()) +
                                J*kfr::sawtoothnorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
                     phi = kfr::fract(phi + phi_incr);
-                    sink->send(pkt, block_data.data(), block_data.size());
+                    sink.send(pkt, block_data);
                 }
                 break;
         }

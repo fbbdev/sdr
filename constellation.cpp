@@ -24,29 +24,29 @@ std::vector<Sample> buf;
 void processor(std::uint16_t id, bool tap, bool throttle) {
     auto it = buf.begin();
 
-    auto source = stdin_source();
-    auto sink = stdout_sink();
+    Source source;
+    Sink sink;
 
-    while (source->next()) {
+    while (source.next()) {
         auto arrival = std::chrono::high_resolution_clock::now();
 
-        if (source->packet().id != id || (source->packet().content != Packet::TimeSignal &&
-                                          source->packet().content != Packet::ComplexTimeSignal)) {
+        if (source.packet().id != id || (source.packet().content != Packet::TimeSignal &&
+                                          source.packet().content != Packet::ComplexTimeSignal)) {
             if (tap)
-                source->pass(sink);
+                source.pass(sink);
             else
-                source->drop();
+                source.drop();
 
             continue;
         }
 
         if (tap)
-            source->copy(sink);
+            source.copy(sink);
 
-        const auto duration = source->packet().duration;
+        const auto duration = source.packet().duration;
 
-        if (source->packet().content == Packet::TimeSignal) {
-            auto data = source->recv<RealSample>();
+        if (source.packet().content == Packet::TimeSignal) {
+            auto data = source.recv<RealSample>();
             auto data_it = data.begin(), data_end = data.end();
 
             while (data_it != data_end) {
@@ -65,12 +65,12 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
                         arrival + std::chrono::nanoseconds(duration*(data_it - data.begin())/data.size()));
             }
         } else {
-            const auto pkt_size = source->packet().count<Sample>();
+            const auto pkt_size = source.packet().count<Sample>();
             auto size = pkt_size;
 
-            while (size && !source->end()) {
+            while (size && !source.end()) {
                 buffer_lock.lock();
-                auto read = source->recv(&*it, std::min(size, std::uint32_t(buf.end() - it)));
+                auto read = source.recv(&*it, std::min(size, std::uint32_t(buf.end() - it)));
                 buffer_lock.unlock();
 
                 size -= read;
