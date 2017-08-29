@@ -2,8 +2,6 @@
 
 #include "stream/stream.hpp"
 
-#include "opt/opt.hpp"
-
 #include <unistd.h>
 
 #include <cstdint>
@@ -21,36 +19,6 @@ typedef float __attribute__((aligned(512))) RealSample;
 typedef kfr::complex<float> __attribute__((aligned(512))) Sample;
 
 static constexpr Sample J{0, 1};
-
-enum class FreqUnit {
-    Hertz,
-    Samples
-};
-
-class FreqUnitOption : public opt::EnumOption<FreqUnit> {
-public:
-    FreqUnitOption(opt::StringView k, FreqUnit v = FreqUnit())
-        : opt::EnumOption<FreqUnit>(k, { { "hz",      FreqUnit::Hertz   },
-                                         { "hertz",   FreqUnit::Hertz   },
-                                         { "samples", FreqUnit::Samples } }, v)
-        {}
-};
-
-enum class TimeUnit {
-    Second,
-    Samples
-};
-
-class TimeUnitOption : public opt::EnumOption<TimeUnit> {
-public:
-    TimeUnitOption(opt::StringView k, TimeUnit v = TimeUnit())
-        : opt::EnumOption<TimeUnit>(k, { { "s",       TimeUnit::Second  },
-                                         { "sec",     TimeUnit::Second  },
-                                         { "seconds", TimeUnit::Second  },
-                                         { "samples", TimeUnit::Samples } }, v)
-        {}
-};
-
 
 template<typename T>
 class SampleAllocator {

@@ -1,9 +1,8 @@
+#include "options.hpp"
 #include "signal.hpp"
 #include "stream/stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
-
-#include "opt/opt.hpp"
 
 #include <cmath>
 #include <algorithm>
@@ -88,9 +87,6 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
 }
 
 int main(int argc, char* argv[]) {
-    using opt::Option;
-    using opt::Placeholder;
-
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
     Option<std::uintmax_t> points("points", Placeholder("POINTS"), 1000);
     Option<bool> tap("tap", false);

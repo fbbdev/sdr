@@ -1,16 +1,10 @@
+#include "options.hpp"
 #include "signal.hpp"
 #include "stream/stream.hpp"
-
-#include "opt/opt.hpp"
 
 using namespace sdr;
 
 int main(int argc, char* argv[]) {
-    using opt::Option;
-    using opt::EnumOption;
-    using opt::Placeholder;
-    using opt::Required;
-
     EnumOption<Packet::Content> content({
         { "binary", Packet::Binary },
         { "string", Packet::String },

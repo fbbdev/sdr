@@ -1,8 +1,7 @@
 #include "hilbert.hpp"
+#include "options.hpp"
 #include "signal.hpp"
 #include "stream/stream.hpp"
-
-#include "opt/opt.hpp"
 
 #include "kfr/dsp/fir.hpp"
 #include "kfr/dsp/oscillators.hpp"
@@ -26,14 +25,8 @@ enum Mode {
 };
 
 int main(int argc, char* argv[]) {
-    using opt::Option;
-    using opt::EnumOption;
-    using opt::Placeholder;
-    using opt::Required;
-
     Option<float> freq("freq", Placeholder("FREQ"), Required);
-    FreqUnitOption unit("unit", FreqUnit::Hertz);
-    EnumOption<Waveform> waveform("waveform", {
+    FreqUnitOption unit(NoStream, "unit", FreqUnit::Hertz);
     EnumOption<Waveform> waveform({
         { "cosine", Cosine },
         { "sine", Sine },
@@ -48,7 +41,7 @@ int main(int argc, char* argv[]) {
         { "real", Real },
         { "complex", Complex }
     }, "mode", Complex);
-    Option<std::uintmax_t> hilbert_taps("hilbert_taps", 127);
+    Option<std::uintmax_t> hilbert_taps("hilbert_taps", Placeholder("COUNT"), 127);
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
 
     if (!opt::parse({ freq, unit, waveform },
