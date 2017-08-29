@@ -7,9 +7,10 @@ using namespace sdr;
 
 int main(int argc, char* argv[]) {
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
-    Option<bool> tap("tap", false);
+    Option<bool> pass("pass", false);
+    Option<bool> pass_all("pass_all", false);
 
-    if (!opt::parse({ id }, { tap }, argv, argv + argc))
+    if (!opt::parse({ id }, { pass, pass_all }, argv, argv + argc))
         return -1;
 
     Source source;
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
 
     while (source.next()) {
         if (id.is_set() && source.packet().id != id) {
-            if (tap)
+            if (pass || pass_all)
                 source.pass(sink);
             continue;
         }
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]) {
         auto r = source.recv(buf);
         std::cerr << " " << r << " bytes received" << std::endl;
 
-        if (tap)
+        if (pass_all)
             sink.send(pkt, buf);
     }
 
