@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
     using opt::Placeholder;
     using opt::Required;
 
-    EnumOption<Packet::Content> content("content_type", {
+    EnumOption<Packet::Content> content({
         { "binary", Packet::Binary },
         { "string", Packet::String },
         { "time", Packet::Time },
@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         { "complex_signal", Packet::ComplexSignal },
         { "spectrum", Packet::Spectrum },
         { "complex_spectrum", Packet::ComplexSpectrum },
-    }, Packet::Binary);
+    }, "content_type", Packet::Binary);
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
     Option<std::uintmax_t> element_size("element_size", Placeholder("BYTES"), Required, 0);
     Option<std::uintmax_t> element_count("element_count", Placeholder("COUNT"), 0);

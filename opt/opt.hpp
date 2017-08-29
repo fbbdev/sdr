@@ -487,28 +487,28 @@ public:
     using value_type = T;
     using value_map = std::map<StringView, value_type>;
 
-    EnumOption(StringView key, value_map&& values,
+    EnumOption(value_map&& values, StringView key,
                value_type const& value = value_type())
         : OptionBase(key, false), values_(std::move(values)), value_(value)
     {
         make_placeholder();
     }
 
-    EnumOption(StringView key, RequiredTag, value_map&& values,
+    EnumOption(value_map&& values, StringView key, RequiredTag,
                value_type const& value = value_type())
         : OptionBase(key, true), values_(std::move(values)), value_(value)
     {
         make_placeholder();
     }
 
-    EnumOption(StringView key, Placeholder p, value_map&& values,
+    EnumOption(value_map&& values, StringView key, Placeholder p,
                value_type const& value = value_type())
         : OptionBase(key, p.str, false),
           values_(std::move(values)), value_(value)
         {}
 
-    EnumOption(StringView key, Placeholder p, RequiredTag,
-               value_map&& values, value_type const& value = value_type())
+    EnumOption(value_map&& values, StringView key, Placeholder p,
+               RequiredTag, value_type const& value = value_type())
         : OptionBase(key, p.str, true),
           values_(std::move(values)), value_(value)
         {}

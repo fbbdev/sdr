@@ -34,19 +34,20 @@ int main(int argc, char* argv[]) {
     Option<float> freq("freq", Placeholder("FREQ"), Required);
     FreqUnitOption unit("unit", FreqUnit::Hertz);
     EnumOption<Waveform> waveform("waveform", {
+    EnumOption<Waveform> waveform({
         { "cosine", Cosine },
         { "sine", Sine },
         { "square", Square },
         { "triangle", Triangle },
         { "sawtooth", Sawtooth }
-    }, Cosine);
+    }, "waveform", Cosine);
     Option<std::uintmax_t> sample_rate("sample_rate", Placeholder("HERTZ"), Required);
     Option<float> amplitude("amp", Placeholder("AMPLITUDE"), 1.0f);
     Option<float> phase("phi", Placeholder("PHASE"), 0.0f);
-    EnumOption<Mode> mode("mode", {
+    EnumOption<Mode> mode({
         { "real", Real },
         { "complex", Complex }
-    }, Complex);
+    }, "mode", Complex);
     Option<std::uintmax_t> hilbert_taps("hilbert_taps", 127);
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
 
