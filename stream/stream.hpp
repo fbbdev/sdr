@@ -11,11 +11,12 @@ struct alignas(std::complex<double>) Packet {
     enum Content : std::uint16_t {
         Binary = 0,
         String,
+        Time,
         Frequency,
-        TimeSignal,
-        ComplexTimeSignal,
-        FreqSignal,
-        ComplexFreqSignal,
+        Signal,
+        ComplexSignal,
+        Spectrum,
+        ComplexSpectrum,
     };
 
     std::uint16_t id;

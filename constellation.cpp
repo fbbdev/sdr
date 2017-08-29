@@ -30,8 +30,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
     while (source.next()) {
         auto arrival = std::chrono::high_resolution_clock::now();
 
-        if (source.packet().id != id || (source.packet().content != Packet::TimeSignal &&
-                                          source.packet().content != Packet::ComplexTimeSignal)) {
+        if (source.packet().id != id || (source.packet().content != Packet::Signal &&
+                                          source.packet().content != Packet::ComplexSignal)) {
             if (tap)
                 source.pass(sink);
             else
@@ -45,7 +45,7 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
 
         const auto duration = source.packet().duration;
 
-        if (source.packet().content == Packet::TimeSignal) {
+        if (source.packet().content == Packet::Signal) {
             auto data = source.recv<RealSample>();
             auto data_it = data.begin(), data_end = data.end();
 

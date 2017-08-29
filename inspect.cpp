@@ -14,16 +14,18 @@ std::ostream& operator<<(std::ostream& stream, Packet::Content cnt) {
             return stream << "Binary";
         case Packet::String:
             return stream << "String";
+        case Packet::Time:
+            return stream << "Time";
         case Packet::Frequency:
             return stream << "Frequency";
-        case Packet::TimeSignal:
-            return stream << "TimeSignal";
-        case Packet::ComplexTimeSignal:
-            return stream << "ComplexTimeSignal";
-        case Packet::FreqSignal:
-            return stream << "FreqSignal";
-        case Packet::ComplexFreqSignal:
-            return stream << "ComplexFreqSignal";
+        case Packet::Signal:
+            return stream << "Signal";
+        case Packet::ComplexSignal:
+            return stream << "ComplexSignal";
+        case Packet::Spectrum:
+            return stream << "Spectrum";
+        case Packet::ComplexSpectrum:
+            return stream << "ComplexSpectrum";
     }
 
     return stream;
@@ -34,8 +36,9 @@ int main(int argc, char* argv[]) {
     using opt::Placeholder;
 
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
+    Option<bool> tap("tap", false);
 
-    if (!opt::parse({ id }, {}, argv, argv + argc))
+    if (!opt::parse({ id }, { tap }, argv, argv + argc))
         return -1;
 
     Source source;
@@ -45,7 +48,8 @@ int main(int argc, char* argv[]) {
 
     while (source.next()) {
         if (id.is_set() && source.packet().id != id) {
-            source.pass(sink);
+            if (tap)
+                source.pass(sink);
             continue;
         }
 
@@ -61,7 +65,8 @@ int main(int argc, char* argv[]) {
         auto r = source.recv(buf);
         std::cerr << " " << r << " bytes received" << std::endl;
 
-        sink.send(pkt, buf);
+        if (tap)
+            sink.send(pkt, buf);
     }
 
     return 0;

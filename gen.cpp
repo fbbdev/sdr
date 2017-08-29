@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 
     Sink sink;
     const Packet pkt = {
-        std::uint16_t(id), (mode == Real) ? Packet::TimeSignal : Packet::ComplexTimeSignal,
+        std::uint16_t(id), (mode == Real) ? Packet::Signal : Packet::ComplexSignal,
         std::uint32_t(block_size * ((mode == Real) ? sizeof(RealSample) : sizeof(Sample))),
         block_size*1000000000ull/sample_rate
     };
