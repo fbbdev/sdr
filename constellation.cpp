@@ -26,9 +26,8 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
     Source source;
     Sink sink;
 
+    auto next_packet = std::chrono::high_resolution_clock::now();
     while (source.next()) {
-        auto arrival = std::chrono::high_resolution_clock::now();
-
         if (source.packet().id != id || (source.packet().content != Packet::Signal &&
                                           source.packet().content != Packet::ComplexSignal)) {
             if (tap)
@@ -59,9 +58,10 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
                 if (it == buf.end())
                     it = buf.begin();
 
-                if (throttle && duration)
-                    std::this_thread::sleep_until(
-                        arrival + std::chrono::nanoseconds(duration*(data_it - data.begin())/data.size()));
+                if (throttle && duration) {
+                    next_packet += std::chrono::nanoseconds(duration*(data_it - data.begin())/data.size());
+                    std::this_thread::sleep_until(next_packet);
+                }
             }
         } else {
             const auto pkt_size = source.packet().count<Sample>();
@@ -78,9 +78,10 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
                 if (it == buf.end())
                     it = buf.begin();
 
-                if (throttle && duration)
-                    std::this_thread::sleep_until(
-                        arrival + std::chrono::nanoseconds(duration*(pkt_size - size)/pkt_size));
+                if (throttle && duration) {
+                    next_packet += std::chrono::nanoseconds(duration*(pkt_size - size)/pkt_size);
+                    std::this_thread::sleep_until(next_packet);
+                }
             }
         }
     }
@@ -99,7 +100,7 @@ int main(int argc, char* argv[]) {
     auto wnd = ui::Window::create(title.get().c_str(), 300, 300);
 
     if (!wnd) {
-        std::cerr << "Fatal error: cannot create window" << std::endl;
+        std::cerr << "constellation: error: cannot create window" << std::endl;
         return -1;
     }
 

@@ -15,14 +15,14 @@ int main(int argc, char* argv[]) {
     Source source;
     Sink sink;
 
+    auto next_packet = std::chrono::high_resolution_clock::now();
     while (source.next()) {
-        auto arrival = std::chrono::high_resolution_clock::now();
-
         source.pass(sink);
 
-        if (!(id.is_set() && source.packet().id != id) && source.packet().duration)
-            std::this_thread::sleep_until(
-                arrival + std::chrono::nanoseconds(source.packet().duration));
+        if (!(id.is_set() && source.packet().id != id) && source.packet().duration) {
+            next_packet += std::chrono::nanoseconds(source.packet().duration);
+            std::this_thread::sleep_until(next_packet);
+        }
     }
 
     return 0;
