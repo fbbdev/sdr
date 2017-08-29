@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <algorithm>
 #include <memory>
 #include <new>
 
@@ -83,9 +84,22 @@ public:
 
 static const long page_size = sysconf(_SC_PAGESIZE);
 
+inline std::size_t optimal_block_size(std::uintmax_t element_size, std::uintmax_t sample_rate = 0) {
+    std::uintmax_t size =
+        std::max(std::uintmax_t(1), std::uintmax_t(2*page_size - sizeof(Packet)) / element_size);
 
+    if (sample_rate == 0)
+        return std::size_t(size);
 
+    const std::uintmax_t step =
+        kfr::lcm(std::uintmax_t(sizeof(Packet)), element_size) / element_size;
+    const std::uintmax_t limit =
+        std::max(std::uintmax_t((page_size - sizeof(Packet)) / element_size), step);
 
+    while (size > limit && (size * 1000000000ull) % sample_rate > 0)
+        size -= step;
 
+    return std::size_t(size);
+}
 
 } /* namespace sdr */

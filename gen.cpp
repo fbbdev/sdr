@@ -23,21 +23,6 @@ enum Mode {
     Complex
 };
 
-static std::size_t find_block_size(Mode mode, std::uintmax_t sample_rate) {
-    std::uint64_t size = page_size / (mode == Real ? sizeof(RealSample)
-                                                   : sizeof(Sample));
-    const std::uint64_t step = (mode == Real) ? 2 : 1;
-    const std::uint64_t limit = size/2;
-
-    if (size <= step)
-        return std::size_t(size);
-
-    while (size > limit && (size * 1000000000ull) % sample_rate > 0)
-        size -= step;
-
-    return std::size_t(size);
-}
-
 int main(int argc, char* argv[]) {
     using opt::Option;
     using opt::EnumOption;
@@ -80,7 +65,8 @@ int main(int argc, char* argv[]) {
     const float A = amplitude;
     float phi = kfr::fract(phase / 360.0f);
 
-    const std::size_t block_size = find_block_size(mode, sample_rate);
+    const std::size_t block_size =
+        optimal_block_size((mode == Real) ? sizeof(RealSample) : sizeof(Sample), sample_rate);
 
     const float phi_incr = kfr::fract(cycles_per_sample * block_size);
 
