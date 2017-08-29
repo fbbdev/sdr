@@ -1,8 +1,10 @@
+#include "hilbert.hpp"
 #include "signal.hpp"
 #include "stream/stream.hpp"
 
 #include "opt/opt.hpp"
 
+#include "kfr/dsp/fir.hpp"
 #include "kfr/dsp/oscillators.hpp"
 
 #include <iostream>
@@ -38,24 +40,26 @@ int main(int argc, char* argv[]) {
         { "triangle", Triangle },
         { "sawtooth", Sawtooth }
     }, Cosine);
-    Option<std::uintmax_t> sample_rate("sample_rate", Placeholder("RATE"), Required);
+    Option<std::uintmax_t> sample_rate("sample_rate", Placeholder("HERTZ"), Required);
     Option<float> amplitude("amp", Placeholder("AMPLITUDE"), 1.0f);
     Option<float> phase("phi", Placeholder("PHASE"), 0.0f);
-    Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
     EnumOption<Mode> mode("mode", {
         { "real", Real },
         { "complex", Complex }
     }, Complex);
+    Option<std::uintmax_t> hilbert_taps("hilbert_taps", 127);
+    Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
 
     if (!opt::parse({ freq, unit, waveform },
-                    { sample_rate, amplitude, phase, mode, id },
+                    { sample_rate, amplitude, phase, mode, hilbert_taps, id },
                     argv, argv + argc))
         return -1;
 
     if (!freq.is_set() || !sample_rate.is_set()) {
+        std::cerr << "error: gen: freq and sample_rate options are required" << std::endl;
         opt::usage(argv[0],
                    { freq, unit, waveform },
-                   { sample_rate, amplitude, phase, mode, id });
+                   { sample_rate, amplitude, phase, mode, hilbert_taps, id });
         return -1;
     }
 
@@ -124,45 +128,55 @@ int main(int argc, char* argv[]) {
 
         const Sample j2pi = { 0, kfr::constants<RealSample>::pi_s(2) };
 
-        switch (waveform.get()) {
-            case Cosine:
-                for (;;) {
-                    block = A*kfr::cexp(j2pi * (phi + cycles_per_sample*kfr::counter()));
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Sine:
-                for (;;) {
-                    block = A*kfr::cexp(j2pi * (phi - 0.25f + cycles_per_sample*kfr::counter()));
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Square:
-                for (;;) {
-                    block = A*(kfr::squarenorm(phi + cycles_per_sample*kfr::counter()) +
-                               J*kfr::squarenorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Triangle:
-                for (;;) {
-                    block = A*(kfr::trianglenorm(phi + cycles_per_sample*kfr::counter()) +
-                               J*kfr::trianglenorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Sawtooth:
-                for (;;) {
-                    block = A*(kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter()) +
-                               J*kfr::sawtoothnorm(phi - 0.25f + cycles_per_sample*kfr::counter()));
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
+        if (waveform == Cosine || waveform == Sine) {
+            if (waveform == Sine)
+                phi -= 0.25f;
+
+            for (;;) {
+                block = A*kfr::cexp(j2pi * (phi + cycles_per_sample*kfr::counter()));
+                phi = kfr::fract(phi + phi_incr);
+                sink.send(pkt, block_data);
+            }
+        } else {
+            kfr::fir_state<RealSample> hilb(hilbert<RealSample>(hilbert_taps.get()));
+            auto hilb_delay = (hilbert_taps - 1) / 2;
+
+            switch (waveform.get()) {
+                case Square:
+                    block = kfr::truncate(kfr::fir(hilb, kfr::squarenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+                    for (;;) {
+                        block = A*(kfr::squarenorm(phi + cycles_per_sample*kfr::counter()) +
+                                   J*kfr::fir(hilb, kfr::squarenorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                    cycles_per_sample*kfr::counter())));
+                        phi = kfr::fract(phi + phi_incr);
+                        sink.send(pkt, block_data);
+                    }
+                    break;
+                case Triangle:
+                    block = kfr::truncate(kfr::fir(hilb, kfr::trianglenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+
+                    for (;;) {
+                        block = A*(kfr::trianglenorm(phi + cycles_per_sample*kfr::counter()) +
+                                   J*kfr::fir(hilb, kfr::trianglenorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                      cycles_per_sample*kfr::counter())));
+                        phi = kfr::fract(phi + phi_incr);
+                        sink.send(pkt, block_data);
+                    }
+                    break;
+                case Sawtooth:
+                    block = kfr::truncate(kfr::fir(hilb, kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+
+                    for (;;) {
+                        block = A*(kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter()) +
+                                   J*kfr::fir(hilb, kfr::sawtoothnorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                      cycles_per_sample*kfr::counter())));
+                        phi = kfr::fract(phi + phi_incr);
+                        sink.send(pkt, block_data);
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
