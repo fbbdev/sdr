@@ -70,4 +70,22 @@ public:
         {}
 };
 
+class PacketContentOption : public EnumOption<Packet::Content> {
+public:
+    template<typename... Args>
+    PacketContentOption(Args&&... args)
+        : EnumOption<Packet::Content>({
+              { "binary", Packet::Binary },
+              { "string", Packet::String },
+              { "time", Packet::Time },
+              { "frequency", Packet::Frequency },
+              { "sample_count", Packet::SampleCount },
+              { "signal", Packet::Signal },
+              { "complex_signal", Packet::ComplexSignal },
+              { "spectrum", Packet::Spectrum },
+              { "complex_spectrum", Packet::ComplexSpectrum },
+          }, std::forward<Args>(args)...)
+        {}
+};
+
 } /* namespace sdr */

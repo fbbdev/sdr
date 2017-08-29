@@ -5,16 +5,7 @@
 using namespace sdr;
 
 int main(int argc, char* argv[]) {
-    EnumOption<Packet::Content> content({
-        { "binary", Packet::Binary },
-        { "string", Packet::String },
-        { "time", Packet::Time },
-        { "frequency", Packet::Frequency },
-        { "signal", Packet::Signal },
-        { "complex_signal", Packet::ComplexSignal },
-        { "spectrum", Packet::Spectrum },
-        { "complex_spectrum", Packet::ComplexSpectrum },
-    }, "content_type", Packet::Binary);
+    PacketContentOption content("content_type", Packet::Binary);
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
     Option<std::uintmax_t> element_size("element_size", Placeholder("BYTES"), Required, 0);
     Option<std::uintmax_t> element_count("element_count", Placeholder("COUNT"), 0);
