@@ -83,34 +83,9 @@ public:
 
 static const long page_size = sysconf(_SC_PAGESIZE);
 
-template<typename T>
-class PageAlignedAllocator {
-public:
-    using value_type = T;
 
-    PageAlignedAllocator() noexcept = default;
-    PageAlignedAllocator(PageAlignedAllocator const&) noexcept = default;
-    PageAlignedAllocator(PageAlignedAllocator&&) noexcept = default;
 
-    T* allocate(std::size_t n) const {
-        T* ptr = reinterpret_cast<T*>(aligned_alloc(page_size, n*sizeof(T)));
-        if (!ptr)
-            throw std::bad_alloc();
 
-        return ptr;
-    }
 
-    void deallocate(T* ptr, std::size_t) const noexcept {
-        free(ptr);
-    }
-
-    bool operator==(PageAlignedAllocator const&) const noexcept {
-        return true;
-    }
-
-    bool operator!=(PageAlignedAllocator const&) const noexcept {
-        return false;
-    }
-};
 
 } /* namespace sdr */

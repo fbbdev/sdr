@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     };
 
     if (mode == Real) {
-        std::vector<RealSample, PageAlignedAllocator<RealSample>> block_data(block_size);
+        std::vector<RealSample, SampleAllocator<RealSample>> block_data(block_size);
         kfr::univector<RealSample, 0> block(block_data.data(), block_size);
 
         switch (waveform.get()) {
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
                 break;
         }
     } else {
-        std::vector<Sample, PageAlignedAllocator<Sample>> block_data(block_size);
+        std::vector<Sample, SampleAllocator<Sample>> block_data(block_size);
         kfr::univector<Sample, 0> block(block_data.data(), block_size);
 
         const Sample j2pi = { 0, kfr::constants<RealSample>::pi_s(2) };
