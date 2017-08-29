@@ -20,7 +20,7 @@ using namespace sdr;
 std::mutex buffer_lock;
 std::vector<Sample> buf;
 
-void processor(std::uint16_t id, bool tap, bool throttle) {
+void processor(std::uint16_t id, bool throttle) {
     auto it = buf.begin();
 
     Source source;
@@ -29,17 +29,9 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
     auto next_packet = std::chrono::high_resolution_clock::now();
     while (source.next()) {
         if (source.packet().id != id || (source.packet().content != Packet::Signal &&
-                                          source.packet().content != Packet::ComplexSignal)) {
-            if (tap)
-                source.pass(sink);
-            else
-                source.drop();
-
+                                         source.packet().content != Packet::ComplexSignal)) {
             continue;
         }
-
-        if (tap)
-            source.copy(sink);
 
         const auto duration = source.packet().duration;
 
@@ -90,11 +82,10 @@ void processor(std::uint16_t id, bool tap, bool throttle) {
 int main(int argc, char* argv[]) {
     Option<std::uintmax_t> id("stream", Placeholder("ID"), 0);
     Option<std::uintmax_t> points("points", Placeholder("POINTS"), 1000);
-    Option<bool> tap("tap", false);
     Option<bool> throttle("throttle", false);
     Option<std::string> title("title", "Constellation");
 
-    if (!opt::parse({ id }, { points, tap, throttle, title }, argv, argv + argc))
+    if (!opt::parse({ id }, { points, throttle, title }, argv, argv + argc))
         return -1;
 
     auto wnd = ui::Window::create(title.get().c_str(), 300, 300);
@@ -107,7 +98,7 @@ int main(int argc, char* argv[]) {
     buf.resize(points);
     auto local_buf = buf;
 
-    std::thread proc(processor, id, tap, throttle);
+    std::thread proc(processor, id, throttle);
     proc.detach();
 
     ui::View view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
