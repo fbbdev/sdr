@@ -48,6 +48,7 @@ blocks = [
     ['inspect'],
     ['throttle'],
     ['unwrap'],
+    ['wrap'],
 ]
 
 foreach b : blocks
