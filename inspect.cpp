@@ -8,29 +8,6 @@
 
 using namespace sdr;
 
-std::ostream& operator<<(std::ostream& stream, Packet::Content cnt) {
-    switch (cnt) {
-        case Packet::Binary:
-            return stream << "Binary";
-        case Packet::String:
-            return stream << "String";
-        case Packet::Time:
-            return stream << "Time";
-        case Packet::Frequency:
-            return stream << "Frequency";
-        case Packet::Signal:
-            return stream << "Signal";
-        case Packet::ComplexSignal:
-            return stream << "ComplexSignal";
-        case Packet::Spectrum:
-            return stream << "Spectrum";
-        case Packet::ComplexSpectrum:
-            return stream << "ComplexSpectrum";
-    }
-
-    return stream;
-}
-
 int main(int argc, char* argv[]) {
     using opt::Option;
     using opt::Placeholder;

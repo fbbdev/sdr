@@ -1,51 +1,18 @@
 #pragma once
 
+#include "packet.hpp"
+
 #include <cstdint>
-#include <complex>
 #include <vector>
 
 namespace sdr
 {
 
-struct alignas(std::complex<double>) Packet {
-    enum Content : std::uint16_t {
-        Binary = 0,
-        String,
-        Time,
-        Frequency,
-        Signal,
-        ComplexSignal,
-        Spectrum,
-        ComplexSpectrum,
-    };
-
-    std::uint16_t id;
-    Content content;
-    std::uint32_t size;
-    std::uint64_t duration;
-
-    template<typename T>
-    bool compatible() const noexcept {
-        return !(size % sizeof(T));
-    }
-
-    template<typename T>
-    std::uint32_t count() const noexcept {
-        return compatible<T>() ? (size / sizeof(T)) : 0;
-    }
-};
-
-
 bool is_fifo(int fd);
-
 
 enum RawTag {
     Raw,
 };
-
-class Source;
-class FileSource;
-class Sink;
 
 class Source {
 public:
@@ -94,8 +61,8 @@ public:
 
     void drop();
 
-    void pass(Sink& sink);
-    void copy(Sink& sink);
+    void pass(class Sink& sink);
+    void copy(class Sink& sink);
 
 protected:
     int fd;
@@ -147,7 +114,6 @@ public:
 
 protected:
     friend class Source;
-    friend class FileSource;
 
     int fd = 0;
     bool raw = false;
