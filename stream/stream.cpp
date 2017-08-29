@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <unistd.h>
 
 #include <cstddef>
@@ -96,24 +97,24 @@ bool sdr::is_fifo(int fd) {
 
 
 bool Source::next(Packet rawpkt) {
-    std::uint8_t pkt_data[sizeof(Packet)];
+    drop();
+    read = 0;
 
     if (eof) {
         pkt = Packet();
         return false;
     }
 
-    drop();
-    read = 0;
-
     if (!raw) {
-        if (read_all(fd, pkt_data, sizeof(Packet)) < sizeof(Packet)) {
+        auto size = pkt_buf.size() - pkt_buf_pos;
+        if (read_all(fd, pkt_buf.data(), size) < size) {
             pkt = Packet();
             eof = true;
             return false;
         }
 
-        pkt = *reinterpret_cast<Packet*>(pkt_data);
+        pkt = *reinterpret_cast<Packet*>(pkt_buf.data());
+        pkt_buf_pos = 0;
     } else {
         pkt = rawpkt;
 
@@ -132,6 +133,29 @@ bool Source::next(Packet rawpkt) {
     }
 
     return true;
+}
+
+bool Source::poll(int timeout) {
+    if (read < pkt.size)
+        return false;
+
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN;
+
+    if (::poll(&pfd, 1, timeout) > 0) {
+        auto r = ::read(fd, pkt_buf.data() + pkt_buf_pos, pkt_buf.size() - pkt_buf_pos);
+        if (r <= 0) {
+            eof = true;
+            return true;
+        }
+
+        pkt_buf_pos += r;
+        if (pkt_buf_pos == pkt_buf.size())
+            return true;
+    }
+
+    return false;
 }
 
 std::uint32_t Source::recv(std::uint8_t* data, std::uint32_t size) {

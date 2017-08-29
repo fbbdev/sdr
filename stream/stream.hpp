@@ -3,6 +3,7 @@
 #include "packet.hpp"
 
 #include <cstdint>
+#include <array>
 #include <vector>
 
 namespace sdr
@@ -22,6 +23,8 @@ public:
         : fd(fd_), raw(true), fifo(is_fifo(fd_)) {}
 
     bool next(Packet rawpkt = {});
+
+    bool poll(int timeout = 0);
 
     bool end() const noexcept {
         return eof;
@@ -72,6 +75,9 @@ protected:
     Packet pkt{};
     std::uint32_t read = 0;
     bool eof = false;
+
+    std::array<std::uint8_t, sizeof(Packet)> pkt_buf;
+    std::size_t pkt_buf_pos = 0;
 
     std::vector<std::uint8_t> buffer;
     std::uint32_t buf_pos = 0;
