@@ -26,7 +26,7 @@ enum Mode {
 
 int main(int argc, char* argv[]) {
     Option<float> freq("freq", Placeholder("FREQ"), Required);
-    FreqUnitOption unit(NoStream, "unit", FreqUnit::Hertz);
+    FreqUnitOption unit("unit", FreqUnit::Hertz);
     EnumOption<Waveform> waveform({
         { "cosine", Cosine },
         { "sine", Sine },
@@ -50,126 +50,181 @@ int main(int argc, char* argv[]) {
         return -1;
 
     if (!freq.is_set() || !sample_rate.is_set()) {
-        std::cerr << "error: gen: freq and sample_rate options are required" << std::endl;
+        std::cerr << "error: gen: options freq and sample_rate are required" << std::endl;
         opt::usage(argv[0],
                    { freq, unit, waveform },
                    { sample_rate, amplitude, phase, mode, hilbert_taps, id });
         return -1;
     }
 
-    const float cycles_per_sample =
-        (unit == FreqUnit::Samples) ? 1.0f / freq.get()
-                                    : freq.get() / sample_rate.get();
-    const float A = amplitude;
+    if (unit == FreqUnit::Stream && (freq < 0 ||
+                                     freq > std::numeric_limits<std::uint16_t>::max() ||
+                                     freq != std::floor(freq))) {
+        std::cerr << "error: gen: " << freq.get() << " is not a valid stream id" << std::endl;
+        return -1;
+    }
+
+    float cycles_per_sample = 0.0f;
+    if (unit != FreqUnit::Stream)
+        cycles_per_sample = (unit == FreqUnit::Samples) ? 1.0f / freq.get()
+                                                        : freq.get() / sample_rate.get();
+    float A = amplitude;
     float phi = kfr::fract(phase / 360.0f);
 
     const std::size_t block_size =
         optimal_block_size((mode == Real) ? sizeof(RealSample) : sizeof(Sample), sample_rate);
 
-    const float phi_incr = kfr::fract(cycles_per_sample * block_size);
+    float phi_incr = kfr::fract(cycles_per_sample * block_size);
 
+    Source source;
     Sink sink;
+
     const Packet pkt = {
         std::uint16_t(id), (mode == Real) ? Packet::Signal : Packet::ComplexSignal,
         std::uint32_t(block_size * ((mode == Real) ? sizeof(RealSample) : sizeof(Sample))),
         block_size*1000000000ull/sample_rate
     };
 
-    if (mode == Real) {
-        std::vector<RealSample, SampleAllocator<RealSample>> block_data(block_size);
-        kfr::univector<RealSample, 0> block(block_data.data(), block_size);
+    std::vector<RealSample, SampleAllocator<RealSample>> real_data(block_size);
+    std::vector<Sample, SampleAllocator<Sample>> complex_data(block_size);
 
-        switch (waveform.get()) {
-            case Cosine:
-                for (;;) {
-                    block = A*kfr::sinenorm(phi + 0.25f + cycles_per_sample*kfr::counter());
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Sine:
-                for (;;) {
-                    block = A*kfr::sinenorm(phi + cycles_per_sample*kfr::counter());
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Square:
-                for (;;) {
-                    block = A*kfr::squarenorm(phi + cycles_per_sample*kfr::counter());
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Triangle:
-                for (;;) {
-                    block = A*kfr::trianglenorm(phi + cycles_per_sample*kfr::counter());
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-            case Sawtooth:
-                for (;;) {
-                    block = A*kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter());
-                    phi = kfr::fract(phi + phi_incr);
-                    sink.send(pkt, block_data);
-                }
-                break;
-        }
-    } else {
-        std::vector<Sample, SampleAllocator<Sample>> block_data(block_size);
-        kfr::univector<Sample, 0> block(block_data.data(), block_size);
+    kfr::fir_state<RealSample> hilb(hilbert<RealSample>(hilbert_taps.get()));
+    auto hilb_delay = (hilbert_taps - 1) / 2;
 
-        const Sample j2pi = { 0, kfr::constants<RealSample>::pi_s(2) };
+    const bool no_source = unit != FreqUnit::Stream;
 
-        if (waveform == Cosine || waveform == Sine) {
-            if (waveform == Sine)
-                phi -= 0.25f;
+    while (no_source || !source.end()) {
+        if (!no_source) {
+            float prev = cycles_per_sample;
 
-            for (;;) {
-                block = A*kfr::cexp(j2pi * (phi + cycles_per_sample*kfr::counter()));
-                phi = kfr::fract(phi + phi_incr);
-                sink.send(pkt, block_data);
+            while (source.poll()) {
+                if (!source.next())
+                    break;
+
+                if (source.packet().id == std::floor(freq) &&
+                    (source.packet().content == Packet::Frequency ||
+                     source.packet().content == Packet::SampleCount)) {
+                    float data = 0.0f;
+                    source.recv(&data, 1);
+                    cycles_per_sample = (source.packet().content == Packet::SampleCount) ?
+                        1.0f / data : data / sample_rate.get();
+                }
+
+                source.drop();
             }
-        } else {
-            kfr::fir_state<RealSample> hilb(hilbert<RealSample>(hilbert_taps.get()));
-            auto hilb_delay = (hilbert_taps - 1) / 2;
+
+            if (cycles_per_sample != prev) {
+                phi_incr = kfr::fract(cycles_per_sample * block_size);
+
+                if (mode == Complex) {
+                    kfr::univector<Sample, 0> block(complex_data.data(), block_size);
+
+                    switch (waveform.get()) {
+                        case Square:
+                            block = kfr::truncate(kfr::fir(hilb, kfr::squarenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+                            break;
+                        case Triangle:
+                            block = kfr::truncate(kfr::fir(hilb, kfr::trianglenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+                            break;
+                        case Sawtooth:
+                            block = kfr::truncate(kfr::fir(hilb, kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+
+        if (mode == Real) {
+            kfr::univector<RealSample, 0> block(real_data.data(), block_size);
 
             switch (waveform.get()) {
-                case Square:
-                    block = kfr::truncate(kfr::fir(hilb, kfr::squarenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
-                    for (;;) {
-                        block = A*(kfr::squarenorm(phi + cycles_per_sample*kfr::counter()) +
-                                   J*kfr::fir(hilb, kfr::squarenorm(phi + (cycles_per_sample*hilb_delay) +
-                                                                    cycles_per_sample*kfr::counter())));
+                case Cosine:
+                    do {
+                        block = A*kfr::sinenorm(phi + 0.25f + cycles_per_sample*kfr::counter());
                         phi = kfr::fract(phi + phi_incr);
-                        sink.send(pkt, block_data);
-                    }
+                        sink.send(pkt, real_data);
+                    } while (no_source);
+                    break;
+                case Sine:
+                    do {
+                        block = A*kfr::sinenorm(phi + cycles_per_sample*kfr::counter());
+                        phi = kfr::fract(phi + phi_incr);
+                        sink.send(pkt, real_data);
+                    } while (no_source);
+                    break;
+                case Square:
+                    do {
+                        block = A*kfr::squarenorm(phi + cycles_per_sample*kfr::counter());
+                        phi = kfr::fract(phi + phi_incr);
+                        sink.send(pkt, real_data);
+                    } while (no_source);
                     break;
                 case Triangle:
-                    block = kfr::truncate(kfr::fir(hilb, kfr::trianglenorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
-
-                    for (;;) {
-                        block = A*(kfr::trianglenorm(phi + cycles_per_sample*kfr::counter()) +
-                                   J*kfr::fir(hilb, kfr::trianglenorm(phi + (cycles_per_sample*hilb_delay) +
-                                                                      cycles_per_sample*kfr::counter())));
+                    do {
+                        block = A*kfr::trianglenorm(phi + cycles_per_sample*kfr::counter());
                         phi = kfr::fract(phi + phi_incr);
-                        sink.send(pkt, block_data);
-                    }
+                        sink.send(pkt, real_data);
+                    } while (no_source);
                     break;
                 case Sawtooth:
-                    block = kfr::truncate(kfr::fir(hilb, kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter())), hilb_delay);
-
-                    for (;;) {
-                        block = A*(kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter()) +
-                                   J*kfr::fir(hilb, kfr::sawtoothnorm(phi + (cycles_per_sample*hilb_delay) +
-                                                                      cycles_per_sample*kfr::counter())));
+                    do {
+                        block = A*kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter());
                         phi = kfr::fract(phi + phi_incr);
-                        sink.send(pkt, block_data);
-                    }
+                        sink.send(pkt, real_data);
+                    } while (no_source);
                     break;
-                default:
-                    break;
+            }
+        } else {
+            kfr::univector<Sample, 0> block(complex_data.data(), block_size);
+
+            const Sample j2pi = { 0, kfr::constants<RealSample>::pi_s(2) };
+
+            if (waveform == Cosine || waveform == Sine) {
+                if (waveform == Sine)
+                    phi -= 0.25f;
+
+                do {
+                    block = A*kfr::cexp(j2pi * (phi + cycles_per_sample*kfr::counter()));
+                    phi = kfr::fract(phi + phi_incr);
+                    sink.send(pkt, complex_data);
+                } while (no_source);
+            } else {
+                switch (waveform.get()) {
+                    case Square:
+                        do {
+                            auto im = cycles_per_sample < 0 ? -J : J;
+                            block = A*(kfr::squarenorm(phi + cycles_per_sample*kfr::counter()) +
+                                       im*kfr::fir(hilb, kfr::squarenorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                         cycles_per_sample*kfr::counter())));
+                            phi = kfr::fract(phi + phi_incr);
+                            sink.send(pkt, complex_data);
+                        } while (no_source);
+                        break;
+                    case Triangle:
+                        do {
+                            auto im = cycles_per_sample < 0 ? -J : J;
+                            block = A*(kfr::trianglenorm(phi + cycles_per_sample*kfr::counter()) +
+                                       im*kfr::fir(hilb, kfr::trianglenorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                           cycles_per_sample*kfr::counter())));
+                            phi = kfr::fract(phi + phi_incr);
+                            sink.send(pkt, complex_data);
+                        } while (no_source);
+                        break;
+                    case Sawtooth:
+                        do {
+                            auto im = cycles_per_sample < 0 ? -J : J;
+                            block = A*(kfr::sawtoothnorm(phi + cycles_per_sample*kfr::counter()) +
+                                       im*kfr::fir(hilb, kfr::sawtoothnorm(phi + (cycles_per_sample*hilb_delay) +
+                                                                           cycles_per_sample*kfr::counter())));
+                            phi = kfr::fract(phi + phi_incr);
+                            sink.send(pkt, complex_data);
+                        } while (no_source);
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }
