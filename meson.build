@@ -12,30 +12,23 @@ endif
 
 release_build = (get_option('buildtype') == 'release')
 
-if cpp.get_id() == 'msvc'
-    relax = '/w'
+relax = '-w'
 
-    if release_build
-        add_project_arguments('/fp:fast', language: ['c', 'cpp'])
-    endif
-else
-    relax = '-w'
+add_project_link_arguments('-fuse-ld=gold',
+                           language: ['c', 'cpp'])
 
-    add_project_link_arguments('-fuse-ld=gold',
+if release_build
+    add_project_arguments('-ffast-math', language: ['c', 'cpp'])
+    add_project_link_arguments('-Wl,-O3', '-O3', '-ffast-math',
                                language: ['c', 'cpp'])
-
-    if release_build
-        add_project_arguments('-ffast-math', language: ['c', 'cpp'])
-        add_project_link_arguments('-Wl,-O3', '-O3', '-ffast-math',
-                                   language: ['c', 'cpp'])
-    endif
-    if cpp.get_id() != 'clang'
-        add_project_link_arguments('-fuse-linker-plugin',
-                                   language: ['c', 'cpp'])
-    endif
+endif
+if cpp.get_id() != 'clang'
+    add_project_link_arguments('-fuse-linker-plugin',
+                               language: ['c', 'cpp'])
 endif
 
 # Dependencies
+dl_lib = cpp.find_library('dl', required: false)
 math_lib = cpp.find_library('m', required: false)
 thread_lib = dependency('threads')
 
