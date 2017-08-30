@@ -146,7 +146,7 @@ NK_GLOBAL const struct nk_color nk_yellow = {255,255,0,255};
     ----
     For square root nuklear uses the famous fast inverse square root:
     https://en.wikipedia.org/wiki/Fast_inverse_square_root with
-    slightly tweaked magic constant. While on todays hardware it is
+    slightly tweaked magic constant. While on today's hardware it is
     probably not faster it is still fast and accurate enough for
     nuklear's use cases. IMPORTANT: this requires float format IEEE 754
 
@@ -157,7 +157,7 @@ NK_GLOBAL const struct nk_color nk_yellow = {255,255,0,255};
     approximate exactly that range is that nuklear only needs sine and
     cosine to generate circles which only requires that exact range.
     In addition I used Remez instead of Taylor for additional precision:
-    www.lolengine.net/blog/2011/12/21/better-function-approximatations.
+    www.lolengine.net/blog/2011/12/21/better-function-approximations.
 
     The tool I used to generate constants for both sine and cosine
     (it can actually approximate a lot more functions) can be
@@ -664,7 +664,7 @@ nk_strmatch_fuzzy_text(const char *str, int str_len,
     const char *pattern, int *out_score)
 {
     /* Returns true if each character in pattern is found sequentially within str
-     * if found then outScore is also set. Score value has no intrinsic meaning.
+     * if found then out_score is also set. Score value has no intrinsic meaning.
      * Range varies with pattern. Can only compare scores with same search pattern. */
 
     /* ------- scores --------- */
@@ -842,7 +842,7 @@ nk_iceilf(float x)
 {
     if (x >= 0) {
         int i = (int)x;
-        return i;
+        return (x > i) ? i+1: i;
     } else {
         int t = (int)x;
         float r = x - (float)t;
@@ -11148,7 +11148,7 @@ nk_edit_draw_text(struct nk_command_buffer *out,
     while ((text_len < byte_len) && glyph_len)
     {
         if (unicode == '\n') {
-            /* new line sepeator so draw previous line */
+            /* new line separator so draw previous line */
             struct nk_rect label;
             label.y = pos_y + line_offset;
             label.h = row_height;
@@ -14363,7 +14363,7 @@ nk_begin_titled(struct nk_context *ctx, const char *name, const char *title,
     if (!(win->flags & NK_WINDOW_HIDDEN) && !(win->flags & NK_WINDOW_NO_INPUT))
     {
         int inpanel, ishovered;
-        const struct nk_window *iter = win;
+        struct nk_window *iter = win;
         float h = ctx->style.font->height + 2.0f * style->window.header.padding.y +
             (2.0f * style->window.header.label_padding.y);
         struct nk_rect win_bounds = (!(win->flags & NK_WINDOW_MINIMIZED))?
@@ -14381,7 +14381,7 @@ nk_begin_titled(struct nk_context *ctx, const char *name, const char *title,
                     iter->bounds: nk_rect(iter->bounds.x, iter->bounds.y, iter->bounds.w, h);
                 if (NK_INTERSECT(win_bounds.x, win_bounds.y, win_bounds.w, win_bounds.h,
                     iter_bounds.x, iter_bounds.y, iter_bounds.w, iter_bounds.h) &&
-                    (!(iter->flags & NK_WINDOW_HIDDEN) || !(iter->flags & NK_WINDOW_BACKGROUND)))
+                    (!(iter->flags & NK_WINDOW_HIDDEN)))
                     break;
 
                 if (iter->popup.win && iter->popup.active && !(iter->flags & NK_WINDOW_HIDDEN) &&
@@ -14394,7 +14394,7 @@ nk_begin_titled(struct nk_context *ctx, const char *name, const char *title,
         }
 
         /* activate window if clicked */
-        if (iter && inpanel && (win != ctx->end) && !(iter->flags & NK_WINDOW_BACKGROUND)) {
+        if (iter && inpanel && (win != ctx->end)) {
             iter = win->next;
             while (iter) {
                 /* try to find a panel with higher priority in the same position */
@@ -14412,19 +14412,30 @@ nk_begin_titled(struct nk_context *ctx, const char *name, const char *title,
                 iter = iter->next;
             }
         }
-
-        if (!iter && ctx->end != win) {
-            if (!(win->flags & NK_WINDOW_BACKGROUND)) {
+        if (iter && !(win->flags & NK_WINDOW_ROM) && (win->flags & NK_WINDOW_BACKGROUND)) {
+            win->flags |= (nk_flags)NK_WINDOW_ROM;
+            iter->flags &= ~(nk_flags)NK_WINDOW_ROM;
+            ctx->active = iter;
+            if (!(iter->flags & NK_WINDOW_BACKGROUND)) {
                 /* current window is active in that position so transfer to top
                  * at the highest priority in stack */
-                nk_remove_window(ctx, win);
-                nk_insert_window(ctx, win, NK_INSERT_BACK);
+                nk_remove_window(ctx, iter);
+                nk_insert_window(ctx, iter, NK_INSERT_BACK);
             }
-            win->flags &= ~(nk_flags)NK_WINDOW_ROM;
-            ctx->active = win;
+        } else {
+            if (!iter && ctx->end != win) {
+                if (!(win->flags & NK_WINDOW_BACKGROUND)) {
+                    /* current window is active in that position so transfer to top
+                     * at the highest priority in stack */
+                    nk_remove_window(ctx, win);
+                    nk_insert_window(ctx, win, NK_INSERT_BACK);
+                }
+                win->flags &= ~(nk_flags)NK_WINDOW_ROM;
+                ctx->active = win;
+            }
+            if (ctx->end != win && !(win->flags & NK_WINDOW_BACKGROUND))
+                win->flags |= NK_WINDOW_ROM;
         }
-        if (ctx->end != win && !(win->flags & NK_WINDOW_BACKGROUND))
-            win->flags |= NK_WINDOW_ROM;
     }
 
     win->layout = (struct nk_panel*)nk_create_panel(ctx);
@@ -14589,6 +14600,10 @@ nk_window_is_any_hovered(struct nk_context *ctx)
     while (iter) {
         /* check if window is being hovered */
         if(!(iter->flags & NK_WINDOW_HIDDEN)) {
+            /* check if window popup is being hovered */
+            if (iter->popup.active && iter->popup.win && nk_input_is_mouse_hovering_rect(&ctx->input, iter->popup.win->bounds))
+                return 1;
+
             if (iter->flags & NK_WINDOW_MINIMIZED) {
                 struct nk_rect header = iter->bounds;
                 header.h = ctx->style.font->height + 2 * ctx->style.window.header.padding.y;
@@ -14598,9 +14613,6 @@ nk_window_is_any_hovered(struct nk_context *ctx)
                 return 1;
             }
         }
-        /* check if window popup is being hovered */
-        if (iter->popup.active && iter->popup.win && nk_input_is_mouse_hovering_rect(&ctx->input, iter->popup.win->bounds))
-            return 1;
         iter = iter->next;
     }
     return 0;
@@ -19449,6 +19461,8 @@ static struct nk_glfw {
     int text_len;
     struct nk_vec2 scroll;
     double last_button_click;
+    int is_double_click_down;
+    struct nk_vec2 double_click_pos;
 } glfw;
 
 #ifdef __APPLE__
@@ -19690,10 +19704,12 @@ nk_glfw3_mouse_button_callback(GLFWwindow* window, int button, int action, int m
     glfwGetCursorPos(window, &x, &y);
     if (action == GLFW_PRESS)  {
         double dt = glfwGetTime() - glfw.last_button_click;
-        if (dt > NK_GLFW_DOUBLE_CLICK_LO && dt < NK_GLFW_DOUBLE_CLICK_HI)
-            nk_input_button(&glfw.ctx, NK_BUTTON_DOUBLE, (int)x, (int)y, nk_true);
+        if (dt > NK_GLFW_DOUBLE_CLICK_LO && dt < NK_GLFW_DOUBLE_CLICK_HI) {
+            glfw.is_double_click_down = nk_true;
+            glfw.double_click_pos = nk_vec2(x, y);
+        }
         glfw.last_button_click = glfwGetTime();
-    } else nk_input_button(&glfw.ctx, NK_BUTTON_DOUBLE, (int)x, (int)y, nk_false);
+    } else glfw.is_double_click_down = nk_false;
 }
 
 NK_INTERN void
@@ -19733,6 +19749,10 @@ nk_glfw3_init(GLFWwindow *win, enum nk_glfw_init_state init_state)
     glfw.ctx.clip.userdata = nk_handle_ptr(0);
     glfw.last_button_click = 0;
     nk_glfw3_device_create();
+
+    glfw.is_double_click_down = nk_false;
+    glfw.double_click_pos = nk_vec2(0, 0);
+
     return &glfw.ctx;
 }
 
@@ -19827,6 +19847,7 @@ nk_glfw3_new_frame(void)
     nk_input_button(ctx, NK_BUTTON_LEFT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS);
     nk_input_button(ctx, NK_BUTTON_MIDDLE, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
     nk_input_button(ctx, NK_BUTTON_RIGHT, (int)x, (int)y, glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS);
+    nk_input_button(ctx, NK_BUTTON_DOUBLE, glfw.double_click_pos.x, glfw.double_click_pos.y, glfw.is_double_click_down);
     nk_input_scroll(ctx, glfw.scroll);
     nk_input_end(&glfw.ctx);
     glfw.text_len = 0;
