@@ -4,9 +4,9 @@
 #include "ui.hpp"
 
 #define NANOVG_GL3_IMPLEMENTATION
-#include "nanovg/nanovg_gl.h"
+#include "nanovg_gl.h"
 
-#include "nuklear/nuklear_glfw_gl3.h"
+#include "nuklear_glfw_gl3.h"
 
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
