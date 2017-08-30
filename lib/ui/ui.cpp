@@ -11,7 +11,7 @@
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-#include "font.hpp"
+#include "resources/font.hpp"
 
 namespace
 {

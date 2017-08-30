@@ -38,6 +38,9 @@ subdir('libs')
 # Include dirs
 subdir('include')
 
+# Resources
+subdir('resources')
+
 # Libraries
 subdir('lib/sdr')
 subdir('lib/ui')

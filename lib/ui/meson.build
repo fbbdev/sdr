@@ -1,6 +1,7 @@
 ui_library = shared_library('sdr_ui',
     'ui.cpp',
     dependencies: [
+        font_res,
         glad_lib,
         nanovg_lib,
         nuklear_lib,
