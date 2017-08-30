@@ -16,9 +16,47 @@ using opt::EnumOption;
 using opt::Placeholder;
 using opt::Required;
 
-enum NoStreamTag {
-    NoStream
+template<typename T, std::uintmax_t = 0>
+struct AlternateOptionHelper {
+    constexpr AlternateOptionHelper() = default;
+    constexpr AlternateOptionHelper(T v_) : v(std::move(v_)) {}
+    constexpr AlternateOptionHelper(AlternateOptionHelper const&) = default;
+
+    constexpr operator T() const {
+        return v;
+    }
+
+    constexpr bool operator==(AlternateOptionHelper const& other) const {
+        return v == other.v;
+    }
+
+    constexpr bool operator!=(AlternateOptionHelper const& other) const {
+        return v != other.v;
+    }
+
+    constexpr bool operator==(T const& other) const {
+        return v == other;
+    }
+
+    constexpr bool operator!=(T const& other) const {
+        return v != other;
+    }
+
+    AlternateOptionHelper& operator=(AlternateOptionHelper const&) = default;
+
+    AlternateOptionHelper& operator=(T v_) {
+        v = std::move(v_);
+        return *this;
+    }
+
+    T v;
 };
+
+template<typename T, std::uintmax_t Id>
+constexpr bool operator==(T const& lhs,
+                          AlternateOptionHelper<T, Id> const& rhs) {
+    return lhs == rhs.v;
+}
 
 template<typename T>
 inline bool valid_stream_id(T const& id) {
@@ -42,6 +80,10 @@ enum class FreqUnit {
     Samples,
     Stream
 };
+
+using FreqUnitOption = Option<FreqUnit>;
+using FreqUnitNoStream = AlternateOptionHelper<FreqUnit>;
+using FreqUnitNoStreamOption = EnumOption<FreqUnitNoStream>;
 
 template<>
 inline FreqUnit content_to_unit<FreqUnit>(Packet::Content cnt) {
@@ -73,44 +115,22 @@ inline T convert_freq(FreqUnit unit, T f, std::uintmax_t sample_rate) {
         default:
             break;
     }
-    
+
     if (unit == FreqUnit::Stream || std::isnan(f) || std::isinf(f))
         return T();
 
     return f;
 }
 
-class FreqUnitOption : public EnumOption<FreqUnit> {
-public:
-    template<typename... Args>
-    FreqUnitOption(Args&&... args)
-        : EnumOption<FreqUnit>({ { "hz",      FreqUnit::Hertz   },
-                                 { "hertz",   FreqUnit::Hertz   },
-                                 { "m",       FreqUnit::Meter   },
-                                 { "meter",   FreqUnit::Meter   },
-                                 { "meters",  FreqUnit::Meter   },
-                                 { "samples", FreqUnit::Samples },
-                                 { "stream",  FreqUnit::Stream  } },
-                               std::forward<Args>(args)...)
-        {}
-
-    template<typename... Args>
-    FreqUnitOption(NoStreamTag, Args&&... args)
-        : EnumOption<FreqUnit>({ { "hz",      FreqUnit::Hertz   },
-                                 { "hertz",   FreqUnit::Hertz   },
-                                 { "m",       FreqUnit::Meter   },
-                                 { "meter",   FreqUnit::Meter   },
-                                 { "meters",  FreqUnit::Meter   },
-                                 { "samples", FreqUnit::Samples } },
-                               std::forward<Args>(args)...)
-        {}
-};
-
 enum class TimeUnit {
     Second,
     Samples,
     Stream,
 };
+
+using TimeUnitOption = Option<TimeUnit>;
+using TimeUnitNoStream = AlternateOptionHelper<TimeUnit>;
+using TimeUnitNoStreamOption = EnumOption<TimeUnitNoStream>;
 
 template<>
 inline TimeUnit content_to_unit<TimeUnit>(Packet::Content cnt) {
@@ -135,45 +155,60 @@ inline T convert_time(TimeUnit unit, float t, std::uintmax_t sample_rate) {
     return t;
 }
 
-class TimeUnitOption : public EnumOption<TimeUnit> {
-public:
-    template<typename... Args>
-    TimeUnitOption(Args&&... args)
-        : EnumOption<TimeUnit>({ { "s",       TimeUnit::Second  },
-                                 { "sec",     TimeUnit::Second  },
-                                 { "seconds", TimeUnit::Second  },
-                                 { "samples", TimeUnit::Samples },
-                                 { "stream",  TimeUnit::Stream  } },
-                               std::forward<Args>(args)...)
-        {}
-
-    template<typename... Args>
-    TimeUnitOption(NoStreamTag, Args&&... args)
-        : EnumOption<TimeUnit>({ { "s",       TimeUnit::Second  },
-                                 { "sec",     TimeUnit::Second  },
-                                 { "seconds", TimeUnit::Second  },
-                                 { "samples", TimeUnit::Samples } },
-                               std::forward<Args>(args)...)
-        {}
-};
-
-class PacketContentOption : public EnumOption<Packet::Content> {
-public:
-    template<typename... Args>
-    PacketContentOption(Args&&... args)
-        : EnumOption<Packet::Content>({
-              { "binary",           Packet::Binary },
-              { "string",           Packet::String },
-              { "time",             Packet::Time },
-              { "frequency",        Packet::Frequency },
-              { "wavelength",       Packet::Wavelength },
-              { "sample_count",     Packet::SampleCount },
-              { "signal",           Packet::Signal },
-              { "complex_signal",   Packet::ComplexSignal },
-              { "spectrum",         Packet::Spectrum },
-              { "complex_spectrum", Packet::ComplexSpectrum },
-          }, std::forward<Args>(args)...)
-        {}
-};
+using PacketContentOption = Option<Packet::Content>;
 
 } /* namespace sdr */
+
+template<>
+const sdr::FreqUnitOption::value_map sdr::FreqUnitOption::values = {
+    { "hertz",   sdr::FreqUnit::Hertz   },
+    { "hz",      sdr::FreqUnit::Hertz   },
+    { "meters",  sdr::FreqUnit::Meter   },
+    { "meter",   sdr::FreqUnit::Meter   },
+    { "m",       sdr::FreqUnit::Meter   },
+    { "samples", sdr::FreqUnit::Samples },
+    { "stream",  sdr::FreqUnit::Stream  },
+};
+
+template<>
+const sdr::FreqUnitNoStreamOption::value_map
+sdr::FreqUnitNoStreamOption::values = {
+    { "hertz",   sdr::FreqUnit::Hertz   },
+    { "hz",      sdr::FreqUnit::Hertz   },
+    { "meters",  sdr::FreqUnit::Meter   },
+    { "meter",   sdr::FreqUnit::Meter   },
+    { "m",       sdr::FreqUnit::Meter   },
+    { "samples", sdr::FreqUnit::Samples },
+};
+
+template<>
+const sdr::TimeUnitOption::value_map sdr::TimeUnitOption::values = {
+    { "seconds", sdr::TimeUnit::Second  },
+    { "sec",     sdr::TimeUnit::Second  },
+    { "s",       sdr::TimeUnit::Second  },
+    { "samples", sdr::TimeUnit::Samples },
+    { "stream",  sdr::TimeUnit::Stream  },
+};
+
+template<>
+const sdr::TimeUnitNoStreamOption::value_map
+sdr::TimeUnitNoStreamOption::values = {
+    { "seconds", sdr::TimeUnit::Second  },
+    { "sec",     sdr::TimeUnit::Second  },
+    { "s",       sdr::TimeUnit::Second  },
+    { "samples", sdr::TimeUnit::Samples },
+};
+
+template<>
+const sdr::PacketContentOption::value_map sdr::PacketContentOption::values = {
+    { "binary",           sdr::Packet::Binary },
+    { "string",           sdr::Packet::String },
+    { "time",             sdr::Packet::Time },
+    { "frequency",        sdr::Packet::Frequency },
+    { "wavelength",       sdr::Packet::Wavelength },
+    { "sample_count",     sdr::Packet::SampleCount },
+    { "signal",           sdr::Packet::Signal },
+    { "complex_signal",   sdr::Packet::ComplexSignal },
+    { "spectrum",         sdr::Packet::Spectrum },
+    { "complex_spectrum", sdr::Packet::ComplexSpectrum },
+};

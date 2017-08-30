@@ -37,8 +37,6 @@ struct alignas(std::complex<double>) Packet {
     }
 };
 
-} /* namespace sdr */
-
 inline std::ostream& operator<<(std::ostream& stream, sdr::Packet::Content cnt) {
     using sdr::Packet;
 
@@ -67,3 +65,5 @@ inline std::ostream& operator<<(std::ostream& stream, sdr::Packet::Content cnt) 
 
     return stream;
 }
+
+} /* namespace sdr */

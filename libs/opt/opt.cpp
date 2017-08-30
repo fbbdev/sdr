@@ -26,6 +26,7 @@
 
 #include <cctype>
 #include <iterator>
+#include <map>
 
 using namespace opt;
 
