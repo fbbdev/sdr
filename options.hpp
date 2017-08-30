@@ -75,14 +75,15 @@ public:
     template<typename... Args>
     PacketContentOption(Args&&... args)
         : EnumOption<Packet::Content>({
-              { "binary", Packet::Binary },
-              { "string", Packet::String },
-              { "time", Packet::Time },
-              { "frequency", Packet::Frequency },
-              { "sample_count", Packet::SampleCount },
-              { "signal", Packet::Signal },
-              { "complex_signal", Packet::ComplexSignal },
-              { "spectrum", Packet::Spectrum },
+              { "binary",           Packet::Binary },
+              { "string",           Packet::String },
+              { "time",             Packet::Time },
+              { "frequency",        Packet::Frequency },
+              { "wavelength",       Packet::Wavelength },
+              { "sample_count",     Packet::SampleCount },
+              { "signal",           Packet::Signal },
+              { "complex_signal",   Packet::ComplexSignal },
+              { "spectrum",         Packet::Spectrum },
               { "complex_spectrum", Packet::ComplexSpectrum },
           }, std::forward<Args>(args)...)
         {}

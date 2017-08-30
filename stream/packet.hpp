@@ -13,6 +13,7 @@ struct alignas(std::complex<double>) Packet {
         String,
         Time,
         Frequency,
+        Wavelength,
         SampleCount,
         Signal,
         ComplexSignal,
@@ -50,6 +51,8 @@ inline std::ostream& operator<<(std::ostream& stream, sdr::Packet::Content cnt) 
             return stream << "Time";
         case Packet::Frequency:
             return stream << "Frequency";
+        case Packet::Wavelength:
+            return stream << "Wavelength";
         case Packet::SampleCount:
             return stream << "SampleCount";
         case Packet::Signal:
