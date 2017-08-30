@@ -70,8 +70,10 @@ int main(int argc, char* argv[]) {
     Source source(Raw);
     Sink sink;
 
-    while (source.next(pkt))
+    while (source.next(pkt)) {
+        while (!source.poll(-1));
         source.pass(sink);
+    }
 
     return 0;
 }
