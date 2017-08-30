@@ -10,6 +10,7 @@ namespace sdr
 {
 
 bool is_fifo(int fd);
+bool is_seekable(int fd);
 
 enum RawTag {
     Raw,
@@ -17,10 +18,13 @@ enum RawTag {
 
 class Source {
 public:
-    explicit Source(int fd_ = 0) : fd(fd_), fifo(is_fifo(fd_)) {}
+    explicit Source(int fd_ = 0)
+        : fd(fd_), fifo(is_fifo(fd_)), seekable(is_seekable(fd_))
+        {}
 
     explicit Source(RawTag, int fd_ = 0)
-        : fd(fd_), raw(true), fifo(is_fifo(fd_)) {}
+        : fd(fd_), raw(true), fifo(is_fifo(fd_)), seekable(is_seekable(fd_))
+        {}
 
     bool next(Packet rawpkt = {});
 
@@ -70,7 +74,7 @@ public:
 protected:
     int fd;
     bool raw = false;
-    bool fifo;
+    bool fifo, seekable;
 
     Packet pkt{};
     std::uint32_t read = 0;

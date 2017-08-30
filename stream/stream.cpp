@@ -95,6 +95,10 @@ bool sdr::is_fifo(int fd) {
     return (s.st_mode & S_IFMT) == S_IFIFO || (s.st_mode & S_IFMT) == S_IFSOCK;
 }
 
+bool sdr::is_seekable(int fd) {
+    return !(lseek(fd, 0, SEEK_CUR) < 0);
+}
+
 
 bool Source::next(Packet rawpkt) {
     drop();
@@ -118,7 +122,7 @@ bool Source::next(Packet rawpkt) {
     } else {
         pkt = rawpkt;
 
-        if (!fifo) {
+        if (seekable) {
             auto pos = lseek(fd, 0, SEEK_CUR);
             auto size = lseek(fd, 0, SEEK_END);
             lseek(fd, pos, SEEK_SET);
@@ -138,6 +142,9 @@ bool Source::next(Packet rawpkt) {
 bool Source::poll(int timeout) {
     if (read < pkt.size)
         return false;
+    if (seekable)
+        // seekable fd, data is always available
+        return true;
 
     struct pollfd pfd;
     pfd.fd = fd;
@@ -190,7 +197,10 @@ std::uint32_t Source::recv(std::uint8_t* data, std::uint32_t size) {
 void Source::drop() {
     auto size = pkt.size - read;
 
-    if (fifo) {
+    if (seekable) {
+        lseek(fd, size, SEEK_CUR);
+        read = pkt.size;
+    } else {
         if (size == 0 || eof) {
             buf_pos = 0;
             buffer.resize(0);
@@ -213,9 +223,6 @@ void Source::drop() {
         }
 
         read += r;
-    } else {
-        lseek(fd, size, SEEK_CUR);
-        read = pkt.size;
     }
 }
 
@@ -245,10 +252,15 @@ void Source::pass(Sink& sink) {
     }
 
     if (r < pkt.size) {
-        if (fifo || sink.fifo)
+        if (fifo || sink.fifo) {
             r += splice_all(fd, sink.fd, pkt.size - r);
-        else
+        } else if (seekable) {
             r += sendfile_all(fd, sink.fd, pkt.size - r);
+        } else {
+            buffer.resize(pkt.size - r);
+            r += read_all(fd, buffer.data(), buffer.size());
+            write_all(fd, buffer.data(), r);
+        }
     }
 
     read = r;
@@ -302,8 +314,9 @@ void Source::copy(Sink& sink) {
                     return;
             }
         }
-    } else if (fifo && r < pkt.size) {
-        // sink is not FIFO, buffer data before writing
+    } else if ((fifo || !seekable) && r < pkt.size) {
+        // sink is not FIFO or source is not seekable,
+        // buffer data before writing
         auto old = buffer.size();
         auto new_ = pkt.size - r;
         buffer.resize(old + new_);
@@ -311,15 +324,15 @@ void Source::copy(Sink& sink) {
         r += read_all(fd, buffer.data() + old, new_);
         write_all(sink.fd, buffer.data() + old, new_);
 
-        if (r < buffer.size())
+        if (r < pkt.size)
             // EOF, or an error occurred
             buffer.resize(r);
     } else {
-        // source is not FIFO, move data and seek back
+        // source is seekable, move data and seek back
         if (sink.fifo)
-            r = splice_all(fd, sink.fd, pkt.size);
+            r = splice_all(fd, sink.fd, pkt.size - r);
         else
-            r = sendfile_all(fd, sink.fd, pkt.size);
+            r = sendfile_all(fd, sink.fd, pkt.size - r);
 
         lseek(fd, -r, SEEK_CUR);
     }
