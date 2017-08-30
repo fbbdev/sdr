@@ -16,5 +16,5 @@ foreach b : blocks
     endif
 
     executable(b[0], b[0] + '.cpp',
-               dependencies: [ sdr_lib, deps ])
+               dependencies: [sdr_lib, deps])
 endforeach
