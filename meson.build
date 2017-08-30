@@ -45,6 +45,7 @@ block_deps = [math_lib, thread_lib]
 blocks = [
     ['constellation', [ui_lib]],
     ['gen'],
+    ['hilbert'],
     ['inspect'],
     ['throttle'],
     ['unwrap'],
