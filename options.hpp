@@ -4,6 +4,10 @@
 
 #include "opt/opt.hpp"
 
+#include <cmath>
+#include <cstdint>
+#include <limits>
+
 namespace sdr
 {
 
@@ -16,11 +20,65 @@ enum NoStreamTag {
     NoStream
 };
 
+template<typename T>
+inline bool valid_stream_id(T const& id) {
+    return id >= 0 && id <= std::numeric_limits<std::uint16_t>::max() &&
+           id == std::floor(id);
+}
+
+template<typename T>
+inline std::uint16_t convert_stream_id(T const& id) {
+    return std::uint16_t(std::floor(id));
+}
+
+template<typename T>
+inline T content_to_unit(Packet::Content cnt) {
+    return T();
+}
+
 enum class FreqUnit {
     Hertz,
+    Meter,
     Samples,
     Stream
 };
+
+template<>
+inline FreqUnit content_to_unit<FreqUnit>(Packet::Content cnt) {
+    switch (cnt) {
+        case Packet::Frequency:
+            return FreqUnit::Hertz;
+        case Packet::Wavelength:
+            return FreqUnit::Meter;
+        case Packet::SampleCount:
+            return FreqUnit::Samples;
+        default:
+            return FreqUnit::Stream;
+    }
+}
+
+template<typename T = float>
+inline T convert_freq(FreqUnit unit, T f, std::uintmax_t sample_rate) {
+    switch (unit) {
+        case FreqUnit::Meter:
+            // c / lambda
+            f = T(299792458) / f;
+            [[fallthrough]];
+        case FreqUnit::Hertz:
+            f /= sample_rate;
+            break;
+        case FreqUnit::Samples:
+            f = T(1) / f;
+            break;
+        default:
+            break;
+    }
+    
+    if (unit == FreqUnit::Stream || std::isnan(f) || std::isinf(f))
+        return T();
+
+    return f;
+}
 
 class FreqUnitOption : public EnumOption<FreqUnit> {
 public:
@@ -28,6 +86,9 @@ public:
     FreqUnitOption(Args&&... args)
         : EnumOption<FreqUnit>({ { "hz",      FreqUnit::Hertz   },
                                  { "hertz",   FreqUnit::Hertz   },
+                                 { "m",       FreqUnit::Meter   },
+                                 { "meter",   FreqUnit::Meter   },
+                                 { "meters",  FreqUnit::Meter   },
                                  { "samples", FreqUnit::Samples },
                                  { "stream",  FreqUnit::Stream  } },
                                std::forward<Args>(args)...)
@@ -37,6 +98,9 @@ public:
     FreqUnitOption(NoStreamTag, Args&&... args)
         : EnumOption<FreqUnit>({ { "hz",      FreqUnit::Hertz   },
                                  { "hertz",   FreqUnit::Hertz   },
+                                 { "m",       FreqUnit::Meter   },
+                                 { "meter",   FreqUnit::Meter   },
+                                 { "meters",  FreqUnit::Meter   },
                                  { "samples", FreqUnit::Samples } },
                                std::forward<Args>(args)...)
         {}
@@ -47,6 +111,29 @@ enum class TimeUnit {
     Samples,
     Stream,
 };
+
+template<>
+inline TimeUnit content_to_unit<TimeUnit>(Packet::Content cnt) {
+    switch (cnt) {
+        case Packet::Time:
+            return TimeUnit::Second;
+        case Packet::SampleCount:
+            return TimeUnit::Samples;
+        default:
+            return TimeUnit::Stream;
+    }
+}
+
+template<typename T = float>
+inline T convert_time(TimeUnit unit, float t, std::uintmax_t sample_rate) {
+    if (unit == TimeUnit::Second)
+        t *= sample_rate;
+
+    if (unit == TimeUnit::Stream || std::isnan(t) || std::isinf(t))
+        return T();
+
+    return t;
+}
 
 class TimeUnitOption : public EnumOption<TimeUnit> {
 public:
