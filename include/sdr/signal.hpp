@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stream/stream.hpp"
+#include "stream.hpp"
 
 #include <unistd.h>
 

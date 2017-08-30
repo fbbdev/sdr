@@ -1,5 +1,5 @@
 #include "options.hpp"
-#include "stream/stream.hpp"
+#include "stream.hpp"
 
 #include <chrono>
 #include <thread>

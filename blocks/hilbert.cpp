@@ -1,9 +1,7 @@
 #include "hilbert.hpp"
 #include "options.hpp"
 #include "signal.hpp"
-#include "stream/stream.hpp"
-
-#include "kfr/dsp/fir.hpp"
+#include "stream.hpp"
 
 #include <algorithm>
 #include <vector>

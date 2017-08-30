@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stream/packet.hpp"
+#include "packet.hpp"
 
 #include "opt/opt.hpp"
 

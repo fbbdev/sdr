@@ -2,6 +2,7 @@
 
 #include "signal.hpp"
 
+#include "kfr/dsp/fir.hpp"
 #include "kfr/dsp/window.hpp"
 
 #include <cmath>
@@ -44,7 +45,7 @@ void hilbert(kfr::univector<T, Tag>& taps) {
 }
 
 template<typename T, std::size_t Size>
-inline kfr::univector<T, Size> hilbert() {
+inline kfr::univector<T, Size> hilbert(kfr::csize_t<Size> = kfr::csize_t<Size>()) {
     static_assert(Size != kfr::tag_array_ref &&
                   Size != kfr::tag_dynamic_vector,
                   "Filter size is not a valid number");

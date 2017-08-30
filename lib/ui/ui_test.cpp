@@ -1,4 +1,4 @@
-#include "ui.hpp"
+#include "ui/ui.hpp"
 
 #include <GLFW/glfw3.h>
 

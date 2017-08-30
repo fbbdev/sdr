@@ -1,9 +1,8 @@
 project('sdr', 'cpp', 'c',
         default_options: ['c_std=c11', 'cpp_std=c++14', 'b_lto=true'])
 
+# Configuration
 cpp = meson.get_compiler('cpp')
-math_lib = cpp.find_library('m', required: false)
-thread_lib = dependency('threads')
 
 vector = get_option('vector')
 if vector != ''
@@ -36,30 +35,19 @@ else
     endif
 endif
 
-subdir('opt')
-subdir('stream')
-subdir('ui')
+# Dependencies
+math_lib = cpp.find_library('m', required: false)
+thread_lib = dependency('threads')
 
-block_deps = [math_lib, thread_lib]
+# Third-party libraries
+subdir('libs')
 
-blocks = [
-    ['constellation', [ui_lib]],
-    ['gen'],
-    ['hilbert'],
-    ['inspect'],
-    ['throttle'],
-    ['unwrap'],
-    ['wrap'],
-]
+# Include dirs
+subdir('include')
 
-foreach b : blocks
-    if b.length() >= 2
-        libs = b[1]
-    else
-        libs = []
-    endif
+# Libraries
+subdir('lib/sdr')
+subdir('lib/ui')
 
-    executable(b[0], b[0] + '.cpp',
-               link_with: [opt_lib, stream_lib, libs],
-               dependencies: block_deps)
-endforeach
+# Blocks
+subdir('blocks')

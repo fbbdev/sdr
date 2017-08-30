@@ -1,9 +1,8 @@
 #include "hilbert.hpp"
 #include "options.hpp"
 #include "signal.hpp"
-#include "stream/stream.hpp"
+#include "stream.hpp"
 
-#include "kfr/dsp/fir.hpp"
 #include "kfr/dsp/oscillators.hpp"
 
 #include <atomic>

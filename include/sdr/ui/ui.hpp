@@ -1,11 +1,7 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-
-#include "glad/glad.h"
-
-#include "nanovg/nanovg.h"
+#include "glad.h"
+#include "nanovg.h"
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
@@ -14,7 +10,10 @@
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
 #define NK_INCLUDE_FONT_BAKING
 #define NK_BUTTON_TRIGGER_ON_RELEASE
-#include "nuklear/nuklear.h"
+#include "nuklear.h"
+
+#include <functional>
+#include <memory>
 
 typedef struct GLFWwindow GLFWwindow;
 

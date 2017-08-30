@@ -1,6 +1,6 @@
 #include "options.hpp"
 #include "signal.hpp"
-#include "stream/stream.hpp"
+#include "stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
 
