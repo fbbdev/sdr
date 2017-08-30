@@ -13,21 +13,23 @@ namespace sdr
 
 template<typename T, std::size_t Tag>
 void hilbert(kfr::univector<T, Tag>& taps) {
+    using base_type = decltype(kfr::real(T()));
+
     auto size = taps.size() - !(taps.size() & 1);
 
-    kfr::univector<T> wnd(size);
-    wnd = kfr::window_blackman<T>(size);
+    kfr::univector<base_type> wnd(size);
+    wnd = kfr::window_blackman<base_type>(size);
 
-    T gain = T();
+    base_type gain = base_type();
 
     std::intmax_t half = size / 2;
 
     for (std::intmax_t i = 1; i <= half; ++i) {
         if (i & 1) {
-            T x = T(1)/T(i);
+            base_type x = base_type(1)/base_type(i);
             taps[half + i] = x * wnd[half + i];
             taps[half - i] = -x * wnd[half - i];
-            gain = taps[half + i] - gain;
+            gain = kfr::real(taps[half + i]) - gain;
         } else {
             taps[half + i] = taps[half - i] = T();
         }
@@ -38,7 +40,7 @@ void hilbert(kfr::univector<T, Tag>& taps) {
 
     gain = 2*kfr::abs(gain);
     for (auto& t: taps)
-        t /= gain;
+        t = t / gain;
 }
 
 template<typename T, std::size_t Size>
