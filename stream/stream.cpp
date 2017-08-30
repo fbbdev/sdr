@@ -140,8 +140,6 @@ bool Source::next(Packet rawpkt) {
 }
 
 bool Source::poll(int timeout) {
-    if (read < pkt.size)
-        return false;
     if (seekable)
         // seekable fd, data is always available
         return true;
@@ -151,15 +149,21 @@ bool Source::poll(int timeout) {
     pfd.events = POLLIN;
 
     if (::poll(&pfd, 1, timeout) > 0) {
-        auto r = ::read(fd, pkt_buf.data() + pkt_buf_pos, pkt_buf.size() - pkt_buf_pos);
-        if (r <= 0) {
-            eof = true;
+        if (!(read < pkt.size) && !raw) {
+            // waiting for a packet
+            if (pkt_buf_pos == pkt_buf.size())
+                return true;
+
+            auto r = ::read(fd, pkt_buf.data() + pkt_buf_pos, pkt_buf.size() - pkt_buf_pos);
+            if (r <= 0)
+                // EOF, or an error occurred
+                return true;
+
+            pkt_buf_pos += r;
+            return pkt_buf_pos == pkt_buf.size();
+        } else {
             return true;
         }
-
-        pkt_buf_pos += r;
-        if (pkt_buf_pos == pkt_buf.size())
-            return true;
     }
 
     return false;
