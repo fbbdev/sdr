@@ -3,6 +3,7 @@ blocks = [
     ['gen'],
     ['hilbert'],
     ['inspect'],
+    ['stream_filter'],
     ['throttle'],
     ['unwrap'],
     ['wrap'],
