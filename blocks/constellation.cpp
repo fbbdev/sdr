@@ -88,6 +88,11 @@ int main(int argc, char* argv[]) {
     if (!opt::parse({ id }, { points, throttle, title }, argv, argv + argc))
         return -1;
 
+    if (!valid_stream_id(id.get())) {
+        std::cerr << "error: gen: " << id.get() << " is not a valid stream id" << std::endl;
+        return -1;
+    }
+
     auto wnd = ui::Window::create(title.get().c_str(), 300, 300);
 
     if (!wnd) {

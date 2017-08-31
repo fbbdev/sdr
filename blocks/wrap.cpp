@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         return -1;
 
     if (!element_size.is_set()) {
-        std::cerr << "error: wrap: element_size option is required" << std::endl;
+        std::cerr << "error: wrap: option 'element_size' is required" << std::endl;
         opt::usage(argv[0],
                    { content, id },
                    { element_size, element_count, duration, sample_rate });
@@ -27,6 +27,11 @@ int main(int argc, char* argv[]) {
 
     if (element_size < 1) {
         std::cerr << "error: wrap: element_size must be greater than zero" << std::endl;
+        return -1;
+    }
+
+    if (!valid_stream_id(id.get())) {
+        std::cerr << "error: gen: " << id.get() << " is not a valid stream id" << std::endl;
         return -1;
     }
 

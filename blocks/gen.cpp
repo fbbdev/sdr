@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
         return -1;
 
     if (!freq.is_set() || !sample_rate.is_set()) {
-        std::cerr << "error: gen: options freq and sample_rate are required" << std::endl;
+        std::cerr << "error: gen: options 'freq' and 'sample_rate' are required" << std::endl;
         opt::usage(argv[0],
                    { freq, unit, waveform },
                    { sample_rate, amplitude, phase, mode, hilbert_taps, id });
@@ -88,6 +88,11 @@ int main(int argc, char* argv[]) {
 
     if (unit == FreqUnit::Stream && !valid_stream_id(freq.get())) {
         std::cerr << "error: gen: " << freq.get() << " is not a valid stream id" << std::endl;
+        return -1;
+    }
+
+    if (!valid_stream_id(id.get())) {
+        std::cerr << "error: gen: " << id.get() << " is not a valid stream id" << std::endl;
         return -1;
     }
 

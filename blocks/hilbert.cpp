@@ -16,6 +16,11 @@ int main(int argc, char* argv[]) {
     if (!opt::parse({ id, taps }, { delay }, argv, argv + argc))
         return -1;
 
+    if (!valid_stream_id(id.get())) {
+        std::cerr << "error: gen: " << id.get() << " is not a valid stream id" << std::endl;
+        return -1;
+    }
+
     Source source;
     Sink sink;
 
