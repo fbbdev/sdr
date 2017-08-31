@@ -3,7 +3,7 @@ blocks = [
     ['gen'],
     ['hilbert'],
     ['inspect'],
-    ['stream_filter'],
+    ['stream-filter'],
     ['throttle'],
     ['unwrap'],
     ['wrap'],
@@ -16,6 +16,6 @@ foreach b : blocks
         deps = []
     endif
 
-    executable(b[0], b[0] + '.cpp',
+    executable(b[0], b[0].underscorify() + '.cpp',
                dependencies: [sdr_lib, deps])
 endforeach

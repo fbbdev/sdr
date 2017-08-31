@@ -1,4 +1,4 @@
-ui_library = shared_library('sdr_ui',
+ui_library = shared_library('sdr-ui',
     'ui.cpp',
     dependencies: [
         font_res,
