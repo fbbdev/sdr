@@ -377,7 +377,7 @@ StringView Option<std::array<T, N>, Enum>::default_placeholder() {
 
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
-    p = "{" + std::to_string(N) + "x" + opt.placeholder().to_string() + "}";
+    p = std::to_string(N) + "x" + opt.placeholder().to_string();
 
     return p;
 }
@@ -388,13 +388,6 @@ bool Option<std::array<T, N>, Enum>::parse(StringView arg, std::ostream& err) {
 
     if (arg.empty())
         return true;
-
-    if (arg.front() != '{' || arg.back() != '}') {
-        error(err) << "vector values should be wrapped in curly braces" << std::endl;
-        return false;
-    }
-
-    arg = trim(arg.substr(1, arg.size() - 2));
 
     Option<T, std::is_enum<T>::value || Enum> opt(key());
     auto it = value_.begin(), end = value_.end();
@@ -411,7 +404,7 @@ bool Option<std::array<T, N>, Enum>::parse(StringView arg, std::ostream& err) {
         }
 
         ++it;
-        arg = arg.substr(comma + 1);
+        arg = arg.substr(std::min(comma + 1, arg.size()));
     }
 
     if (arg.size() || it != end) {
@@ -475,7 +468,7 @@ StringView Option<std::vector<T>, Enum>::default_placeholder() {
 
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
-    p = "{" + opt.placeholder().to_string() + ", ... }";
+    p = opt.placeholder().to_string() + ",...";
 
     return p;
 }
@@ -489,19 +482,7 @@ bool Option<std::vector<T>, Enum>::parse(StringView arg, std::ostream& err) {
 
     Option<T, std::is_enum<T>::value || Enum> opt(key());
 
-    if (arg.front() != '{' || arg.back() != '}') {
-        if (!opt.parse(arg, err))
-            return false;
-
-        value_.clear();
-        value_.push_back(std::move(opt.value_));
-
-        set();
-        return true;
-    }
-
     value_.clear();
-    arg = trim(arg.substr(1, arg.size() - 2));
 
     while (arg.size()) {
         auto comma = std::min(arg.find(','), arg.size());
@@ -516,7 +497,7 @@ bool Option<std::vector<T>, Enum>::parse(StringView arg, std::ostream& err) {
             value_.push_back(T());
         }
 
-        arg = arg.substr(comma + 1);
+        arg = arg.substr(std::min(comma + 1, arg.size()));
     }
 
     set();
@@ -575,7 +556,7 @@ StringView Option<std::set<T>, Enum>::default_placeholder() {
 
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
-    p = "{" + opt.placeholder().to_string() + ", ... }";
+    p = opt.placeholder().to_string() + ",...";
 
     return p;
 }
@@ -589,19 +570,7 @@ bool Option<std::set<T>, Enum>::parse(StringView arg, std::ostream& err) {
 
     Option<T, std::is_enum<T>::value || Enum> opt(key());
 
-    if (arg.front() != '{' || arg.back() != '}') {
-        if (!opt.parse(arg, err))
-            return false;
-
-        value_.clear();
-        value_.insert(std::move(opt.value_));
-
-        set();
-        return true;
-    }
-
     value_.clear();
-    arg = trim(arg.substr(1, arg.size() - 2));
 
     while (arg.size()) {
         auto comma = std::min(arg.find(','), arg.size());
@@ -614,7 +583,7 @@ bool Option<std::set<T>, Enum>::parse(StringView arg, std::ostream& err) {
             value_.insert(std::move(opt.value_));
         }
 
-        arg = arg.substr(comma + 1);
+        arg = arg.substr(std::min(comma + 1, arg.size()));
     }
 
     set();
