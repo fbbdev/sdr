@@ -374,7 +374,7 @@ StringView Option<std::array<T, N>, Enum>::default_placeholder() {
 
     if (!p.empty())
         return p;
-    
+
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
     p = "{" + std::to_string(N) + "x" + opt.placeholder().to_string() + "}";
@@ -472,7 +472,7 @@ StringView Option<std::vector<T>, Enum>::default_placeholder() {
 
     if (!p.empty())
         return p;
-    
+
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
     p = "{" + opt.placeholder().to_string() + ", ... }";
@@ -572,7 +572,7 @@ StringView Option<std::set<T>, Enum>::default_placeholder() {
 
     if (!p.empty())
         return p;
-    
+
     Option<T, std::is_enum<T>::value || Enum> opt("");
 
     p = "{" + opt.placeholder().to_string() + ", ... }";
@@ -676,7 +676,7 @@ private:
 template<typename T>
 StringView Option<T, true>::default_placeholder() {
     static std::string p;
-    
+
     if (!p.empty())
         return p;
 

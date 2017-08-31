@@ -82,7 +82,7 @@ public:
                 std::function<void(nk_context*, int, int)> gui) {
         update(nk_rgb(0, 0, 0), nullptr, draw_vg, gui);
     }
-    
+
 private:
     Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_);
 
