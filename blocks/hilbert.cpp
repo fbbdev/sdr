@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     Source source;
     Sink sink;
 
-    kfr::fir_state<Sample> hilb(hilbert<Sample>(taps.get()));
+    kfr::fir_state<RealSample, Sample> hilb(hilbert<RealSample>(taps.get()));
     std::size_t hilb_delay = delay ? (std::size_t(taps.get()) - 1) / 2 : 0;
 
     std::vector<RealSample, SampleAllocator<RealSample>> real_data;
