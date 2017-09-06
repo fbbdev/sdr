@@ -17,6 +17,7 @@
 ui_library = shared_library('sdr-ui',
     'ui.cpp',
     'grid.cpp',
+    'plate.cpp',
     dependencies: [
         font_res,
         glad_lib,

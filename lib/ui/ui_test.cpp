@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include <sstream>
 
 using namespace sdr;
 
@@ -38,8 +37,6 @@ int main() {
     int avgCount = 5;
     float scale = 50.0f;
 
-    std::ostringstream formatter;
-
     std::string fps = "FPS: 0";
     std::size_t frames = 0;
     double lastTime = 0;
@@ -47,14 +44,14 @@ int main() {
     bool mpressed = false;
     bool prevShowLine = false;
 
+    ui::Plate plate;
+
     while (!wnd->closed()) {
         auto time = glfwGetTime();
         ++frames;
 
         if (time - lastTime >= 0.5) {
-            formatter.str("");
-            formatter << "FPS: " << frames * 2;
-            fps = formatter.str();
+            fps = "FPS: " + ui::format(frames * 2);
             frames = 0;
             lastTime += 0.5;
         }
@@ -67,7 +64,7 @@ int main() {
                          my > 0 && my < wSize.second &&
                          wnd->focused());
 
-        wnd->update([&formatter,avgCount,scale,fps,mx,my,showLine](NVGcontext* vg, int width, int height) {
+        wnd->update([avgCount,scale,fps,&plate,mx,my,showLine](NVGcontext* vg, int width, int height) {
             nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
             nvgText(vg, 10, 10, fps.c_str(), NULL);
@@ -84,12 +81,9 @@ int main() {
                 nvgLineTo(vg, mx, height);
                 nvgStroke(vg);
 
-                formatter.str("");
-                formatter << mx;
-
-                nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
-                nvgTextAlign(vg, ((width - mx < 100) ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) | NVG_ALIGN_MIDDLE);
-                nvgText(vg, mx + ((width - mx < 100) ? -10 : 10), my, formatter.str().c_str(), NULL);
+                plate.draw(vg, ui::format(mx),
+                           ((width - mx < 100) ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) | NVG_ALIGN_MIDDLE,
+                           { float(mx), float(my) });
             }
         }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](nk_context* ctx, int width, int height) {
             if (prevShowLine && showLine) {

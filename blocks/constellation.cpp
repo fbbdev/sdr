@@ -141,6 +141,8 @@ int main(int argc, char* argv[]) {
         } },
     });
 
+    ui::Plate plate;
+
     while (!wnd->closed()) {
         buffer_lock.lock();
         std::copy(buf.begin(), buf.end(), local_buf.begin());
@@ -148,10 +150,7 @@ int main(int argc, char* argv[]) {
 
         auto focused = wnd->focused();
 
-        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,mouse,focused](NVGcontext* vg, int width, int height) {
-            std::ostringstream fmt;
-            fmt << std::defaultfloat;
-
+        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,&plate,mouse,focused](NVGcontext* vg, int width, int height) {
             bool showCursor = focused && (mouse.x > 0 && mouse.x < width)
                                       && (mouse.y > 0 && mouse.y < height);
 
@@ -160,6 +159,8 @@ int main(int argc, char* argv[]) {
             grid.draw(vg, view);
 
             // draw constellation
+            nvgSave(vg);
+
             view.apply(vg);
 
             nvgFillColor(vg, nvgRGB(80, 208, 80));
@@ -170,10 +171,10 @@ int main(int argc, char* argv[]) {
             }
             nvgFill(vg);
 
+            nvgRestore(vg);
+
             // draw cursor
             if (showCursor) {
-                nvgResetTransform(vg);
-
                 nvgStrokeColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
 
                 nvgBeginPath(vg);
@@ -191,33 +192,15 @@ int main(int argc, char* argv[]) {
 
                 std::string label = ui::format(coord.x, pixel_mag.x) +
                                     ((coord.y < 0) ? "-" : "+") + "j" +
-                                    ui::format(coord.y, pixel_mag.y);
+                                    ui::format(std::abs(coord.y), pixel_mag.y);
 
                 bool left   = (width - mouse.x < 100),
                      bottom = (mouse.y < 50);
 
-                nvgTextAlign(vg, (left ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) |
-                                 (bottom ? NVG_ALIGN_TOP : NVG_ALIGN_BOTTOM));
+                int align = (left ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) |
+                            (bottom ? NVG_ALIGN_TOP : NVG_ALIGN_BOTTOM);
 
-                float bounds[4];
-                nvgTextBounds(vg,
-                    mouse.x + (left ? -10 : 10), mouse.y + (bottom ? 10 : -10),
-                    label.c_str(), nullptr, bounds);
-                float label_width = bounds[2] - bounds[0];
-                float label_height = bounds[3] - bounds[1];
-
-                // Text background, for readability
-                nvgFillColor(vg, nvgRGBAf(0.0f, 0.0f, 0.0f, 0.5f));
-                nvgBeginPath(vg);
-                nvgRoundedRect(vg,
-                    mouse.x + (left ? -15-label_width : 5), mouse.y + (bottom ? 5 : -15 - label_height),
-                    label_width + 10, label_height + 10, 3);
-                nvgFill(vg);
-
-                nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
-                nvgText(vg,
-                    mouse.x + (left ? -10 : 10), mouse.y + (bottom ? 10 : -10),
-                    label.c_str(), nullptr);
+                plate.draw(vg, label, align, mouse);
             }
         }, [&view,&mouse](nk_context* ctx, int width, int height) {
             view.zoom(ctx->input.mouse.scroll_delta.y);

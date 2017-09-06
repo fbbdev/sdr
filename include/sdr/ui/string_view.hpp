@@ -18,9 +18,11 @@
 
 #pragma once
 
-#include "format.hpp"
-#include "grid.hpp"
-#include "plate.hpp"
-#include "string_view.hpp"
-#include "view.hpp"
-#include "window.hpp"
+#include <experimental/string_view>
+
+namespace sdr { namespace ui
+{
+
+using StringView = std::experimental::string_view;
+
+} /* namespace ui */ } /* namespace sdr */
