@@ -122,12 +122,12 @@ public:
         return width != 0 ? compute_step(view) : step_;
     }
 
-    float step_magnitude() const {
-        return std::floor(std::log10(step_));
+    long step_magnitude() const {
+        return long(std::floor(std::log10(step_)));
     }
 
-    float step_magnitude(AppliedView const& view) const {
-        return std::floor(std::log10(step(view)));
+    long step_magnitude(AppliedView const& view) const {
+        return long(std::floor(std::log10(step(view))));
     }
 
     Scale compute(AppliedView const& view) const {

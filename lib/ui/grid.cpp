@@ -16,10 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "format.hpp"
 #include "grid.hpp"
-
-#include <iomanip>
-#include <sstream>
 
 using namespace sdr::ui;
 
@@ -53,9 +51,6 @@ static constexpr int valign_vert(int align) {
 }
 
 void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
-    std::ostringstream fmt;
-    fmt << std::defaultfloat;
-
     nvgSave(vg);
 
     for (auto const& lst: scales_) {
@@ -68,6 +63,7 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
 
         for (auto const& s: lst.second) {
             auto scale = s.compute(view);
+            auto step_mag = scale.step_magnitude();
 
             if (scale.orientation() == Scale::Horizontal) {
                 auto ha = halign(style.label_align);
@@ -86,12 +82,8 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
                     nvgMoveTo(vg, gx, 0);
                     nvgLineTo(vg, gx, view.height);
 
-                    if (style.label) {
-                        fmt.str(std::string());
-                        fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(x))) - scale.step_magnitude()) + 1))
-                            << x;
-                        nvgText(vg, gx + label_x, label_y, fmt.str().c_str(), nullptr);
-                    }
+                    if (style.label)
+                        nvgText(vg, gx + label_x, label_y, format(x, step_mag).c_str(), nullptr);
                 }
 
                 nvgStroke(vg);
@@ -112,12 +104,8 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
                     nvgMoveTo(vg, 0, gy);
                     nvgLineTo(vg, view.width, gy);
 
-                    if (style.label) {
-                        fmt.str(std::string());
-                        fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(y))) - scale.step_magnitude()) + 1))
-                            << y;
-                        nvgText(vg, label_x, gy + label_y, fmt.str().c_str(), nullptr);
-                    }
+                    if (style.label)
+                        nvgText(vg, label_x, gy + label_y, format(y, step_mag).c_str(), nullptr);
                 }
 
                 nvgStroke(vg);
