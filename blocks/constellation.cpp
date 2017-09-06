@@ -24,11 +24,9 @@
 #include <cmath>
 #include <algorithm>
 #include <chrono>
-#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <mutex>
-#include <sstream>
 #include <thread>
 #include <vector>
 
@@ -191,11 +189,9 @@ int main(int argc, char* argv[]) {
                     std::floor(std::log10(std::abs(view.local_delta_y(1))))
                 };
 
-                fmt.str(std::string());
-                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(coord.x))) - pixel_mag.x) + 1))
-                    << coord.x
-                    << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(coord.y))) - pixel_mag.y) + 1))
-                    << ((coord.y < 0) ? '-' : '+') << 'j' << std::abs(coord.y);
+                std::string label = ui::format(coord.x, pixel_mag.x) +
+                                    ((coord.y < 0) ? "-" : "+") + "j" +
+                                    ui::format(coord.y, pixel_mag.y);
 
                 bool left   = (width - mouse.x < 100),
                      bottom = (mouse.y < 50);
@@ -206,7 +202,7 @@ int main(int argc, char* argv[]) {
                 float bounds[4];
                 nvgTextBounds(vg,
                     mouse.x + (left ? -10 : 10), mouse.y + (bottom ? 10 : -10),
-                    fmt.str().c_str(), nullptr, bounds);
+                    label.c_str(), nullptr, bounds);
                 float label_width = bounds[2] - bounds[0];
                 float label_height = bounds[3] - bounds[1];
 
@@ -221,7 +217,7 @@ int main(int argc, char* argv[]) {
                 nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
                 nvgText(vg,
                     mouse.x + (left ? -10 : 10), mouse.y + (bottom ? 10 : -10),
-                    fmt.str().c_str(), nullptr);
+                    label.c_str(), nullptr);
             }
         }, [&view,&mouse](nk_context* ctx, int width, int height) {
             view.zoom(ctx->input.mouse.scroll_delta.y);
