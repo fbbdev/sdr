@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "ui.hpp"
+#include "window.hpp"
 
 #include <cmath>
 #include <limits>

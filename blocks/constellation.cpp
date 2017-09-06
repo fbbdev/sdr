@@ -20,8 +20,6 @@
 #include "signal.hpp"
 #include "stream.hpp"
 #include "ui/ui.hpp"
-#include "ui/view.hpp"
-#include "ui/grid.hpp"
 
 #include <cmath>
 #include <algorithm>
