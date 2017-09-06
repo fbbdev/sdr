@@ -16,39 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "align.hpp"
 #include "format.hpp"
 #include "grid.hpp"
 
 using namespace sdr::ui;
-
-static constexpr int halign_mask = NVG_ALIGN_LEFT |
-                                   NVG_ALIGN_CENTER |
-                                   NVG_ALIGN_RIGHT;
-static constexpr int valign_mask = NVG_ALIGN_TOP |
-                                   NVG_ALIGN_MIDDLE |
-                                   NVG_ALIGN_RIGHT |
-                                   NVG_ALIGN_BASELINE;
-
-static constexpr int halign(int align) {
-    int a = align & halign_mask;
-    return a ? a : NVG_ALIGN_LEFT;
-}
-
-static constexpr int valign(int align) {
-    int a = align & valign_mask;
-    return a ? a : NVG_ALIGN_TOP;
-}
-
-static constexpr int valign_vert(int align) {
-    int a = valign(align);
-
-    if (a & NVG_ALIGN_TOP)
-        return NVG_ALIGN_BOTTOM;
-    else if (a & NVG_ALIGN_BOTTOM)
-        return NVG_ALIGN_TOP;
-
-    return a;
-}
 
 void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
     nvgSave(vg);
@@ -66,9 +38,9 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
             auto step_mag = scale.step_magnitude();
 
             if (scale.orientation() == Scale::Horizontal) {
-                auto ha = halign(style.label_align);
+                auto ha = detail::halign(style.label_align);
 
-                nvgTextAlign(vg, ha | valign(style.label_align));
+                nvgTextAlign(vg, ha | detail::valign(style.label_align));
 
                 float label_x =
                     (ha & NVG_ALIGN_LEFT) ? style.label_distance :
@@ -88,14 +60,14 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
 
                 nvgStroke(vg);
             } else {
-                auto va = valign_vert(style.label_align);
+                auto va = detail::valign_inv(style.label_align);
 
-                nvgTextAlign(vg, halign(style.label_align) | va);
+                nvgTextAlign(vg, detail::halign(style.label_align) | va);
 
                 float label_x = style.label_margin + (view.width - 2*style.label_margin)*style.label_position;
                 float label_y =
                     (va & NVG_ALIGN_TOP) ? style.label_distance :
-                        (va & NVG_ALIGN_BOTTOM) ? -style.label_distance : 0.0f;
+                        (va & (NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE)) ? -style.label_distance : 0.0f;
 
                 nvgBeginPath(vg);
 
