@@ -21,6 +21,7 @@
 #include "stream.hpp"
 #include "ui/ui.hpp"
 #include "ui/view.hpp"
+#include "ui/grid.hpp"
 
 #include <cmath>
 #include <algorithm>
@@ -127,6 +128,23 @@ int main(int argc, char* argv[]) {
     ui::View view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
     struct nk_vec2 mouse = { 0.0f, 0.0f };
 
+    ui::Grid grid({
+        { { nvgRGB(60, 180, 60), 1.0f }, {
+            ui::Scale(ui::Scale::Horizontal, 0, { -0.5, 0.5 }, 1.0f),
+            ui::Scale(ui::Scale::Vertical, 0, { -0.5, 0.5 }, 1.0f),
+        } },
+        { { nvgRGBA(50, 100, 50, 230), 1.0f }, {
+            ui::Scale(ui::Scale::Horizontal, 0, { -INFINITY, -0.5f }, 100, 1.0f),
+            ui::Scale(ui::Scale::Horizontal, 0, { 0.5f, INFINITY }, 100, 1.0f),
+            ui::Scale(ui::Scale::Vertical, 0, { -INFINITY, -0.5f }, 100, 1.0f),
+            ui::Scale(ui::Scale::Vertical, 0, { 0.5f, INFINITY }, 100, 1.0f),
+        } },
+        { { nvgRGBA(30, 80, 30, 200), 0.6f, false }, {
+            ui::Scale(ui::Scale::Horizontal, 0.5f, 100, 1.0f),
+            ui::Scale(ui::Scale::Vertical, 0.5f, 100, 1.0f),
+        } },
+    });
+
     while (!wnd->closed()) {
         buffer_lock.lock();
         std::copy(buf.begin(), buf.end(), local_buf.begin());
@@ -134,7 +152,7 @@ int main(int argc, char* argv[]) {
 
         auto focused = wnd->focused();
 
-        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,mouse,focused](NVGcontext* vg, int width, int height) {
+        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,mouse,focused](NVGcontext* vg, int width, int height) {
             std::ostringstream fmt;
             fmt << std::defaultfloat;
 
@@ -142,110 +160,8 @@ int main(int argc, char* argv[]) {
                                       && (mouse.y > 0 && mouse.y < height);
 
             auto view = v.compute(width, height);
-            auto center = view.global({ 0, 0 });
-            // draw grid
 
-            // draw center lines
-            nvgFillColor(vg, nvgRGB(60, 180, 60));
-            nvgStrokeColor(vg, nvgRGB(60, 180, 60));
-
-            nvgBeginPath(vg);
-            if (center.x > 0 && center.x < width) {
-                nvgMoveTo(vg, center.x, 0);
-                nvgLineTo(vg, center.x, height);
-
-                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-                nvgText(vg, center.x + 5, 5, "0", 0);
-            }
-
-            if (center.y > 0 && center.y < height) {
-                nvgMoveTo(vg, 0, center.y);
-                nvgLineTo(vg, width, center.y);
-
-                nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BOTTOM);
-                nvgText(vg, 5, center.y - 5, "0", 0);
-            }
-            nvgStroke(vg);
-
-            // draw lines every ~100px
-            const auto grid_step = std::pow(2.0f, std::round(std::log2(view.local_delta_x(100))));
-            const auto grid_step_mag = std::floor(std::log10(grid_step));
-
-            nvgFillColor(vg, nvgRGBA(50, 100, 50, 230));
-            nvgStrokeColor(vg, nvgRGBA(50, 100, 50, 230));
-
-            nvgBeginPath(vg);
-
-            // vertical lines
-            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-
-            auto grid_start_x =
-                grid_step * std::floor(view.local_x(0)/grid_step);
-            auto grid_end_x =
-                grid_step * (1 + std::ceil(view.local_x(width)/grid_step));
-
-            for (float x = grid_start_x; x < grid_end_x; x += grid_step) {
-                if (x > -grid_step && x < grid_step)
-                    // skip 0
-                    continue;
-
-                auto gx = view.global_x(x);
-                nvgMoveTo(vg, gx, 0);
-                nvgLineTo(vg, gx, height);
-
-                fmt.str(std::string());
-                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(x))) - grid_step_mag) + 1))
-                    << x;
-                nvgText(vg, gx + 5, 5, fmt.str().c_str(), nullptr);
-            }
-
-            // horizontal lines
-            nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_BOTTOM);
-
-            auto grid_start_y =
-                grid_step * std::floor(view.local_y(height)/grid_step);
-            auto grid_end_y =
-                grid_step * (1 + std::ceil(view.local_y(0)/grid_step));
-
-            for (float y = grid_start_y; y < grid_end_y; y += grid_step) {
-                if (y > -grid_step && y < grid_step)
-                    // skip 0
-                    continue;
-
-                auto gy = view.global_y(y);
-                nvgMoveTo(vg, 0, gy);
-                nvgLineTo(vg, width, gy);
-
-                fmt.str(std::string());
-                fmt << std::setprecision(std::max(3l, long(std::floor(std::log10(std::abs(y))) - grid_step_mag) + 1))
-                    << y;
-                nvgText(vg, 5, gy - 5, fmt.str().c_str(), nullptr);
-            }
-
-            nvgStroke(vg);
-
-            // draw half step lines
-            nvgStrokeColor(vg, nvgRGBA(30, 80, 30, 200));
-            nvgStrokeWidth(vg, 0.6f);
-
-            nvgBeginPath(vg);
-
-            // vertical lines
-            for (float x = grid_start_x + (grid_step/2); x < grid_end_x; x += grid_step) {
-                auto gx = view.global_x(x);
-                nvgMoveTo(vg, gx, 0);
-                nvgLineTo(vg, gx, height);
-            }
-
-            // horizontal lines
-            for (float y = grid_start_y + (grid_step/2); y < grid_end_y; y += grid_step) {
-                auto gy = view.global_y(y);
-                nvgMoveTo(vg, 0, gy);
-                nvgLineTo(vg, width, gy);
-            }
-
-            nvgStroke(vg);
-            nvgStrokeWidth(vg, 1);
+            grid.draw(vg, view);
 
             // draw constellation
             view.apply(vg);
