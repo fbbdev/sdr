@@ -29,17 +29,18 @@ namespace sdr { namespace ui
 using Vec2 = struct nk_vec2;
 
 struct AppliedView {
-    Vec2 s, t;
+    int width = 0, height = 0;
+    Vec2 s = { 0.0f, 0.0f }, t = { 0.0f, 0.0f };
 
     Vec2 local(Vec2 p) const {
         return { p.x/s.x - t.x, p.y/s.y - t.y };
     }
 
-    float local_x(float x) {
+    float local_x(float x) const {
         return x/s.x - t.x;
     }
 
-    float local_y(float y) {
+    float local_y(float y) const {
         return y/s.y - t.y;
     }
 
@@ -47,11 +48,11 @@ struct AppliedView {
         return { p.x/s.x, p.y/s.y };
     }
 
-    float local_delta_x(float x) {
+    float local_delta_x(float x) const {
         return x/s.x;
     }
 
-    float local_delta_y(float y) {
+    float local_delta_y(float y) const {
         return y/s.y;
     }
 
@@ -59,11 +60,11 @@ struct AppliedView {
         return { (p.x + t.x)*s.x, (p.y + t.y)*s.y };
     }
 
-    float global_x(float x) {
+    float global_x(float x) const {
         return (x + t.x)*s.x;
     }
 
-    float global_y(float y) {
+    float global_y(float y) const {
         return (y + t.y)*s.y;
     }
 
@@ -71,11 +72,11 @@ struct AppliedView {
         return { p.x*s.x, p.y*s.y };
     }
 
-    float global_delta_x(float x) {
+    float global_delta_x(float x) const {
         return x*s.x;
     }
 
-    float global_delta_y(float y) {
+    float global_delta_y(float y) const {
         return y*s.y;
     }
 
@@ -158,6 +159,7 @@ public:
                                    : std::pair<float, float>{ height, width };
 
         AppliedView v = {
+            width, height,
             ((iso == NonIsometric) ? Vec2{float(width), float(height)} :
                  (iso == IsometricFitMin) ? Vec2{mm.first, mm.first}
                                           : Vec2{mm.second, mm.second}),
@@ -174,6 +176,7 @@ public:
 
     View& operator=(View const&) = default;
     View& operator=(View&&) = default;
+
 private:
     IsometricMode iso;
     Vec2 size_, center_, rate;

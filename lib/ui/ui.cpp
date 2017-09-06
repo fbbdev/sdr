@@ -81,8 +81,7 @@ namespace
     }
 } /* namespace */
 
-using namespace sdr;
-using namespace ui;
+using namespace sdr::ui;
 
 std::unique_ptr<Window> Window::create(char const* title, int width, int height) {
     if (!glfw_initialized) {
