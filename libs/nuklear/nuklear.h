@@ -1,5 +1,5 @@
 /*
- Nuklear - 1.40.8 - public domain
+ Nuklear - 2.00.4 - public domain
  no warranty implied; use at your own risk.
  authored from 2015-2017 by Micha Mettke
 
@@ -1351,20 +1351,23 @@ NK_API int nk_item_is_any_active(struct nk_context*);
  *  IMPORTANT: only call this function between calls `nk_begin_xxx` and `nk_end`
  *  Parameters:
  *      @ctx must point to an previously initialized `nk_context` struct
+ *      @name of the window to modify both position and size
  *      @bounds points to a `nk_rect` struct with the new position and size of currently active window */
-NK_API void nk_window_set_bounds(struct nk_context*, struct nk_rect bounds);
+NK_API void nk_window_set_bounds(struct nk_context*, const char *name, struct nk_rect bounds);
 /*  nk_window_set_position - updates position of the currently processed window
  *  IMPORTANT: only call this function between calls `nk_begin_xxx` and `nk_end`
  *  Parameters:
  *      @ctx must point to an previously initialized `nk_context` struct
+ *      @name of the window to modify position of
  *      @pos points to a `nk_vec2` struct with the new position of currently active window */
-NK_API void nk_window_set_position(struct nk_context*, struct nk_vec2 pos);
+NK_API void nk_window_set_position(struct nk_context*, const char *name, struct nk_vec2 pos);
 /*  nk_window_set_size - updates size of the currently processed window
  *  IMPORTANT: only call this function between calls `nk_begin_xxx` and `nk_end`
  *  Parameters:
  *      @ctx must point to an previously initialized `nk_context` struct
- *      @bounds points to a `nk_vec2` struct with the new size of currently active window */
-NK_API void nk_window_set_size(struct nk_context*, struct nk_vec2);
+ *      @name of the window to modify size of
+ *      @size points to a `nk_vec2` struct with the new size of currently active window */
+NK_API void nk_window_set_size(struct nk_context*, const char *name, struct nk_vec2);
 /*  nk_window_set_focus - sets the window with given name as active
  *  Parameters:
  *      @ctx must point to an previously initialized `nk_context` struct
@@ -2103,6 +2106,9 @@ NK_API void nk_contextual_end(struct nk_context*);
  *
  * ============================================================================= */
 NK_API void nk_tooltip(struct nk_context*, const char*);
+#ifdef NK_INCLUDE_STANDARD_VARARGS
+NK_API void nk_tooltipf(struct nk_context*, const char*, ...);
+#endif
 NK_API int nk_tooltip_begin(struct nk_context*, float width);
 NK_API void nk_tooltip_end(struct nk_context*);
 /* =============================================================================
@@ -2465,7 +2471,7 @@ typedef void(*nk_query_font_glyph_f)(nk_handle handle, float font_height,
                                     struct nk_user_font_glyph *glyph,
                                     nk_rune codepoint, nk_rune next_codepoint);
 
-#ifdef NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#if defined(NK_INCLUDE_VERTEX_BUFFER_OUTPUT) || defined(NK_INCLUDE_SOFTWARE_FONT)
 struct nk_user_font_glyph {
     struct nk_vec2 uv[2];
     /* texture coordinates */
@@ -2499,6 +2505,7 @@ enum nk_font_coord_type {
     NK_COORD_PIXEL /* texture coordinates inside font glyphs are in absolute pixel */
 };
 
+struct nk_font;
 struct nk_baked_font {
     float height;
     /* height of the font  */
@@ -2544,6 +2551,8 @@ struct nk_font_config {
     /* font to setup in the baking process: NOTE: not needed for font atlas */
     nk_rune fallback_glyph;
     /* fallback glyph to use if a given rune is not found */
+    struct nk_font_config *n;
+    struct nk_font_config *p;
 };
 
 struct nk_font_glyph {
@@ -4240,4 +4249,4 @@ template<typename T> struct nk_alignof{struct Big {T x; char c;}; enum {
 #define NK_ALIGNOF(t) ((char*)(&((struct {char c; t _h;}*)0)->_h) - (char*)0)
 #endif
 
-#endif /* NK_H_ */
+#endif /* NK_NUKLEAR_H_ */
