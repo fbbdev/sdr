@@ -148,12 +148,10 @@ int main(int argc, char* argv[]) {
         std::copy(buf.begin(), buf.end(), local_buf.begin());
         buffer_lock.unlock();
 
-        auto focused = wnd->focused();
+        auto showCursor = wnd->focused() && wnd->mouse_over() &&
+                          wnd->cursor_mode() != ui::Window::CursorMode::Grab;
 
-        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,&plate,mouse,focused](NVGcontext* vg, int width, int height) {
-            bool showCursor = focused && (mouse.x > 0 && mouse.x < width)
-                                      && (mouse.y > 0 && mouse.y < height);
-
+        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,&plate,mouse,showCursor](NVGcontext* vg, int width, int height) {
             auto view = v.compute(width, height);
 
             grid.draw(vg, view);
@@ -175,7 +173,8 @@ int main(int argc, char* argv[]) {
 
             // draw cursor
             if (showCursor) {
-                nvgStrokeColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
+                // Lines
+                nvgStrokeColor(vg, nvgRGBf(0.6f, 0.6f, 0.6f));
 
                 nvgBeginPath(vg);
                 nvgMoveTo(vg, mouse.x, 0);
@@ -203,13 +202,23 @@ int main(int argc, char* argv[]) {
                 plate.draw(vg, label, align, mouse);
             }
         }, [&view,&mouse](nk_context* ctx, int width, int height) {
-            view.zoom(ctx->input.mouse.scroll_delta.y);
-
             mouse = ctx->input.mouse.pos;
 
-            if (nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT))
+            if (ctx->input.mouse.scroll_delta.y) {
+                auto cursor = view.compute(width, height).local(mouse);
+
+                view.zoom(ctx->input.mouse.scroll_delta.y);
+                view.move(nk_vec2_sub(view.compute(width, height)
+                                          .local(mouse), cursor));
+            }
+
+            if (nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT)) {
+                ctx->input.mouse.grab = true;
                 view.move(view.compute(width, height)
                               .local_delta(ctx->input.mouse.delta));
+            } else {
+                ctx->input.mouse.ungrab = true;
+            }
         });
     }
 
