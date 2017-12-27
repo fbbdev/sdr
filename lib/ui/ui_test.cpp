@@ -58,11 +58,8 @@ int main() {
 
         double mx, my;
         glfwGetCursorPos(wnd->handle(), &mx, &my);
-        auto wSize = wnd->size();
 
-        bool showLine = (mx > 0 && mx < wSize.first &&
-                         my > 0 && my < wSize.second &&
-                         wnd->focused());
+        bool showLine = wnd->focused() && wnd->mouse_over();
 
         wnd->update([avgCount,scale,fps,&plate,mx,my,showLine](NVGcontext* vg, int width, int height) {
             nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));

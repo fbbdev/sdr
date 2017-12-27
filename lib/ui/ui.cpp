@@ -135,6 +135,7 @@ Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_)
 
     glfwSetWindowFocusCallback(wnd, focus_callback);
     glfwSetWindowIconifyCallback(wnd, minimize_callback);
+    glfwSetCursorEnterCallback(wnd, mouse_over_callback);
 
     int nvg_font = nvgCreateFontMem(vg, "default",
         const_cast<std::uint8_t*>(font_data), sizeof(font_data), false);
@@ -172,6 +173,20 @@ std::pair<int, int> Window::fb_size() const {
 
 bool Window::closed() const {
     return glfwWindowShouldClose(wnd);
+}
+
+Window::CursorMode Window::cursor_mode() const {
+    int m = glfwGetInputMode(wnd, GLFW_CURSOR);
+    return (m == GLFW_CURSOR_DISABLED) ? CursorMode::Grab :
+           (m == GLFW_CURSOR_HIDDEN)   ? CursorMode::Hide
+                                       : CursorMode::Normal;
+}
+
+void Window::cursor_mode(CursorMode mode) {
+    int m = (mode == CursorMode::Grab) ? GLFW_CURSOR_DISABLED :
+            (mode == CursorMode::Hide) ? GLFW_CURSOR_HIDDEN
+                                       : GLFW_CURSOR_NORMAL;
+    glfwSetInputMode(wnd, GLFW_CURSOR, m);
 }
 
 void Window::update(nk_color background,
@@ -217,10 +232,15 @@ void Window::update(nk_color background,
 
 void Window::focus_callback(GLFWwindow* wnd, int state) {
     auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
-    cls->focused_ = (state == GLFW_TRUE);
+    cls->focused_ = !!state;
 }
 
 void Window::minimize_callback(GLFWwindow* wnd, int state) {
     auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
-    cls->minimized_ = (state == GLFW_TRUE);
+    cls->minimized_ = !!state;
+}
+
+void Window::mouse_over_callback(GLFWwindow* wnd, int state) {
+    auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
+    cls->mouse_over_ = !!state;
 }

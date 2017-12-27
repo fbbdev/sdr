@@ -40,6 +40,12 @@ namespace sdr { namespace ui
 
 class Window {
 public:
+    enum CursorMode {
+        Normal,
+        Hide,
+        Grab
+    };
+
     static std::unique_ptr<Window> create(char const* title, int width, int height);
 
     ~Window();
@@ -57,7 +63,6 @@ public:
     }
 
     std::pair<int, int> size() const;
-
     std::pair<int, int> fb_size() const;
 
     bool focused() const {
@@ -68,7 +73,14 @@ public:
         return minimized_;
     }
 
+    bool mouse_over() const {
+        return mouse_over_;
+    }
+
     bool closed() const;
+
+    CursorMode cursor_mode() const;
+    void cursor_mode(CursorMode mode);
 
     void update(nk_color background,
                 std::function<void(int, int, int, int)> draw_gl,
@@ -106,6 +118,7 @@ private:
 
     static void focus_callback(GLFWwindow* wnd, int state);
     static void minimize_callback(GLFWwindow* wnd, int state);
+    static void mouse_over_callback(GLFWwindow* wnd, int state);
 
     GLFWwindow* wnd;
     NVGcontext* vg;
@@ -113,6 +126,7 @@ private:
 
     bool focused_ = false;
     bool minimized_ = false;
+    bool mouse_over_ = false;
 };
 
 } /* namespace ui */ } /* namespace sdr */
