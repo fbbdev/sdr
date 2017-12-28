@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
     std::thread proc(processor, id, throttle);
     proc.detach();
 
-    ui::View view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
+    ui::InteractiveView view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
     struct nk_vec2 mouse = { 0.0f, 0.0f };
 
     ui::Grid grid({
@@ -203,22 +203,7 @@ int main(int argc, char* argv[]) {
             }
         }, [&view,&mouse](nk_context* ctx, int width, int height) {
             mouse = ctx->input.mouse.pos;
-
-            if (ctx->input.mouse.scroll_delta.y) {
-                auto cursor = view.compute(width, height).local(mouse);
-
-                view.zoom(ctx->input.mouse.scroll_delta.y);
-                view.move(nk_vec2_sub(view.compute(width, height)
-                                          .local(mouse), cursor));
-            }
-
-            if (nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT)) {
-                ctx->input.mouse.grab = true;
-                view.move(view.compute(width, height)
-                              .local_delta(ctx->input.mouse.delta));
-            } else {
-                ctx->input.mouse.ungrab = true;
-            }
+            view.interact(ctx, { 0, 0, float(width), float(height) });
         });
     }
 
