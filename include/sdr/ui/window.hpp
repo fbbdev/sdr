@@ -34,6 +34,7 @@
 #include <memory>
 
 typedef struct GLFWwindow GLFWwindow;
+typedef struct nk_glfw3_context nk_glfw3_context;
 
 namespace sdr { namespace ui
 {
@@ -114,7 +115,7 @@ public:
     }
 
 private:
-    Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_);
+    Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_);
 
     static void focus_callback(GLFWwindow* wnd, int state);
     static void minimize_callback(GLFWwindow* wnd, int state);
@@ -122,6 +123,7 @@ private:
 
     GLFWwindow* wnd;
     NVGcontext* vg;
+    nk_glfw3_context* gctx;
     nk_context* ctx;
 
     bool focused_ = false;

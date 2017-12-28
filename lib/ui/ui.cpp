@@ -118,20 +118,20 @@ std::unique_ptr<Window> Window::create(char const* title, int width, int height)
         return nullptr;
     }
 
-    auto ctx = nk_glfw3_init(wnd, NK_GLFW3_INSTALL_CALLBACKS);
-    if (!ctx) {
+    auto gctx = nk_glfw3_init(wnd, NK_GLFW3_INSTALL_CALLBACKS);
+    if (!gctx) {
         nvgDeleteGL3(vg);
         glfwDestroyWindow(wnd);
         return nullptr;
     }
 
-    return std::unique_ptr<Window>(new Window(wnd, vg, ctx));
+    return std::unique_ptr<Window>(new Window(wnd, vg, gctx));
 }
 
-Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_)
-    : wnd(wnd_), vg(vg_), ctx(ctx_)
+Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_)
+    : wnd(wnd_), vg(vg_), gctx(gctx_), ctx(gctx_->ctx)
 {
-    glfwSetWindowUserPointer(wnd, this);
+    gctx->userdata = reinterpret_cast<void*>(this);
 
     glfwSetWindowFocusCallback(wnd, focus_callback);
     glfwSetWindowIconifyCallback(wnd, minimize_callback);
@@ -142,10 +142,10 @@ Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_)
     nvgFontFaceId(vg, nvg_font);
 
     nk_font_atlas* atlas;
-    nk_glfw3_font_stash_begin(&atlas);
+    nk_glfw3_font_stash_begin(gctx, &atlas);
     nk_font *nk_font = nk_font_atlas_add_from_memory(
         atlas, const_cast<std::uint8_t*>(font_data), sizeof(font_data), 18, nullptr);
-    nk_glfw3_font_stash_end();
+    nk_glfw3_font_stash_end(gctx);
     nk_style_set_font(ctx, &nk_font->handle);
 
     nk_style_from_table(ctx, style());
@@ -154,7 +154,7 @@ Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_context* ctx_)
 }
 
 Window::~Window() {
-    nk_glfw3_shutdown();
+    nk_glfw3_shutdown(gctx);
     nvgDeleteGL3(vg);
     glfwDestroyWindow(wnd);
 }
@@ -203,7 +203,7 @@ void Window::update(nk_color background,
     }
 
     glfwPollEvents();
-    nk_glfw3_new_frame();
+    nk_glfw3_new_frame(gctx);
 
     int wWidth, wHeight,
         fbWidth, fbHeight;
@@ -234,21 +234,24 @@ void Window::update(nk_color background,
         //glEnable(GL_MULTISAMPLE);
     }
 
-    nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+    nk_glfw3_render(gctx, NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
     glfwSwapBuffers(wnd);
 }
 
 void Window::focus_callback(GLFWwindow* wnd, int state) {
-    auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
+    auto cls = reinterpret_cast<Window*>(
+        reinterpret_cast<nk_glfw3_context*>(glfwGetWindowUserPointer(wnd))->userdata);
     cls->focused_ = !!state;
 }
 
 void Window::minimize_callback(GLFWwindow* wnd, int state) {
-    auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
+    auto cls = reinterpret_cast<Window*>(
+        reinterpret_cast<nk_glfw3_context*>(glfwGetWindowUserPointer(wnd))->userdata);
     cls->minimized_ = !!state;
 }
 
 void Window::mouse_over_callback(GLFWwindow* wnd, int state) {
-    auto cls = reinterpret_cast<Window*>(glfwGetWindowUserPointer(wnd));
+    auto cls = reinterpret_cast<Window*>(
+        reinterpret_cast<nk_glfw3_context*>(glfwGetWindowUserPointer(wnd))->userdata);
     cls->mouse_over_ = !!state;
 }
