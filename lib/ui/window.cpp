@@ -197,7 +197,8 @@ void Window::update(nk_color background,
     if (ctx->input.mouse.grab && !ctx->input.mouse.grabbed) {
         ctx->input.mouse.grabbed = true;
         cursor_mode(ui::Window::CursorMode::Grab);
-    } else if (ctx->input.mouse.ungrab && ctx->input.mouse.grabbed) {
+    }
+    if (ctx->input.mouse.ungrab && ctx->input.mouse.grabbed) {
         ctx->input.mouse.grabbed = false;
         cursor_mode(ui::Window::CursorMode::Normal);
     }

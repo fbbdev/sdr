@@ -18,10 +18,20 @@
 
 #pragma once
 
-#include "format.hpp"
-#include "grid.hpp"
-#include "interactive_view.hpp"
-#include "plate.hpp"
-#include "string_view.hpp"
 #include "view.hpp"
 #include "window.hpp"
+
+namespace sdr { namespace ui
+{
+
+class InteractiveView : public View {
+public:
+    using View::View;
+
+    bool interact(nk_context* ctx, struct nk_rect r, bool zoom_around_cursor = false);
+
+private:
+    bool pressed = false;
+};
+
+} /* namespace ui */ } /* namespace sdr */
