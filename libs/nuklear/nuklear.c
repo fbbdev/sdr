@@ -19816,6 +19816,8 @@ nk_glfw3_init(GLFWwindow *win, enum nk_glfw_init_state init_state)
 {
     struct nk_glfw3_context* gctx = (struct nk_glfw3_context*) malloc(sizeof(struct nk_glfw3_context));
     struct nk_glfw* glfw = gctx->glfw = (struct nk_glfw*) malloc(sizeof(struct nk_glfw));
+    memset(glfw, 0, sizeof(struct nk_glfw));
+
     gctx->ctx = &glfw->ctx;
     gctx->userdata = 0;
 
