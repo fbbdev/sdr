@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ui_library = shared_library('sdr-ui',
-    'ui.cpp',
+    'window.cpp',
     'grid.cpp',
     'plate.cpp',
     dependencies: [
