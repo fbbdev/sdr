@@ -40,5 +40,5 @@ ui_lib = declare_dependency(include_directories: [
                             link_with: ui_library,
                             dependencies: [math_lib])
 
-executable('ui_test', 'ui_test.cpp',
+executable('demo', 'demo.cpp',
            dependencies: [ui_lib, glfw_lib])
