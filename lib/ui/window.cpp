@@ -42,8 +42,8 @@ namespace
         static const nk_color fg = nk_rgba(210, 210, 210, 255),
                               bg = nk_rgba(40, 40, 40, 255),
                               highlight = nk_rgba(80, 80, 80, 255),
-                              window = nk_rgba(70, 70, 70, 200),
-                              header = nk_rgba(50, 50, 50, 220),
+                              window = nk_rgba(70, 70, 70, 255),
+                              header = nk_rgba(50, 50, 50, 255),
                               accent = nk_rgba(58, 93, 240, 255),
                               accent_highlight = nk_rgba(78, 113, 240, 255),
                               accent_active = nk_rgba(48, 83, 200, 255);
