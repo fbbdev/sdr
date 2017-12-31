@@ -9799,21 +9799,30 @@ nk_draw_symbol(struct nk_command_buffer *out, enum nk_symbol_type type,
     struct nk_rect content, struct nk_color background, struct nk_color foreground,
     float border_width, const struct nk_user_font *font)
 {
+    struct nk_rect r = nk_shrink_rect(content, nk_ifloorf(content.w/3.0f));
+
     switch (type) {
-    case NK_SYMBOL_X:
-    case NK_SYMBOL_UNDERSCORE:
-    case NK_SYMBOL_PLUS:
-    case NK_SYMBOL_MINUS: {
-        /* single character text symbol */
-        const char *X = (type == NK_SYMBOL_X) ? "x":
-            (type == NK_SYMBOL_UNDERSCORE) ? "_":
-            (type == NK_SYMBOL_PLUS) ? "+": "-";
-        struct nk_text text;
-        text.padding = nk_vec2(0,0);
-        text.background = background;
-        text.text = foreground;
-        nk_widget_text(out, content, X, 1, &text, NK_TEXT_CENTERED, font);
+    case NK_SYMBOL_X: {
+        struct nk_rect clip, old_clip = out->clip;
+        nk_unify(&clip, &old_clip, r.x, r.y, r.x + r.w, r.y + r.h);
+        nk_push_scissor(out, clip);
+        nk_stroke_line(out, r.x - 1, r.y - 1, r.x + r.w + 1, r.y + r.h + 1, 2.0f, foreground);
+        nk_stroke_line(out, r.x - 1, r.y + r.h + 1, r.x + r.w + 1, r.y - 1, 2.0f, foreground);
+        nk_push_scissor(out, old_clip);
     } break;
+    case NK_SYMBOL_UNDERSCORE:
+        r.y = r.y + r.h - 2.0f;
+        r.h = 2.0f;
+        nk_fill_rect(out, r, 0, foreground);
+    case NK_SYMBOL_PLUS:
+    case NK_SYMBOL_MINUS:
+        nk_stroke_line(out, r.x, r.y + (r.h/2.0f),
+            r.x + r.w, r.y + (r.h/2.0f), 2.0f, foreground);
+        if (type == NK_SYMBOL_PLUS) {
+            nk_stroke_line(out, r.x + (r.w/2.0f), r.y,
+                r.x + (r.w/2.0f), r.y + r.h, 2.0f, foreground);
+        }
+        break;
     case NK_SYMBOL_CIRCLE_SOLID:
     case NK_SYMBOL_CIRCLE_OUTLINE:
     case NK_SYMBOL_RECT_SOLID:
