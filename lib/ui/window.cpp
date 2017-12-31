@@ -128,8 +128,8 @@ std::unique_ptr<Window> Window::create(char const* title, int width, int height)
     return std::unique_ptr<Window>(new Window(wnd, vg, gctx));
 }
 
-Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_)
-    : wnd(wnd_), vg(vg_), gctx(gctx_), ctx(gctx_->ctx)
+Window::Window(GLFWwindow* wnd_, NVGcontext* vgc_, nk_glfw3_context* gctx_)
+    : wnd(wnd_), vg_(vgc_), gctx(gctx_), ctx(gctx_->ctx)
 {
     gctx->userdata = reinterpret_cast<void*>(this);
 
@@ -137,9 +137,9 @@ Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_)
     glfwSetWindowIconifyCallback(wnd, minimize_callback);
     glfwSetCursorEnterCallback(wnd, mouse_over_callback);
 
-    int nvg_font = nvgCreateFontMem(vg, "default",
+    int nvg_font = nvgCreateFontMem(vg_, "default",
         const_cast<std::uint8_t*>(font_data), sizeof(font_data), false);
-    nvgFontFaceId(vg, nvg_font);
+    nvgFontFaceId(vg_, nvg_font);
 
     nk_font_atlas* atlas;
     nk_glfw3_font_stash_begin(gctx, &atlas);
@@ -155,7 +155,7 @@ Window::Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_)
 
 Window::~Window() {
     nk_glfw3_shutdown(gctx);
-    nvgDeleteGL3(vg);
+    nvgDeleteGL3(vg_);
     glfwDestroyWindow(wnd);
 }
 
@@ -189,10 +189,10 @@ void Window::cursor_mode(CursorMode mode) {
     glfwSetInputMode(wnd, GLFW_CURSOR, m);
 }
 
-void Window::update(nk_color background,
+void Window::update(NVGcolor background,
                     std::function<void(int, int, int, int)> draw_gl,
                     std::function<void(NVGcontext*, int, int)> draw_vg,
-                    std::function<void(nk_context*, int, int)> gui)
+                    std::function<void(Window*, int, int)> gui)
 {
     if (ctx->input.mouse.grab && !ctx->input.mouse.grabbed) {
         ctx->input.mouse.grabbed = true;
@@ -213,13 +213,10 @@ void Window::update(nk_color background,
     std::tie(fbWidth, fbHeight) = fb_size();
 
     if (gui)
-        gui(ctx, wWidth, wHeight);
-
-    float bg[4];
-    nk_color_fv(bg, background);
+        gui(this, wWidth, wHeight);
 
     glViewport(0, 0, fbWidth, fbHeight);
-    glClearColor(bg[0], bg[1], bg[2], bg[3]);
+    glClearColor(background.r, background.g, background.b, background.a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_MULTISAMPLE);
 
@@ -229,9 +226,9 @@ void Window::update(nk_color background,
     if (draw_vg) {
         //glDisable(GL_MULTISAMPLE);
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        nvgBeginFrame(vg, wWidth, wHeight, float(fbWidth) / float(wWidth));
-        draw_vg(vg, wWidth, wHeight);
-        nvgEndFrame(vg);
+        nvgBeginFrame(vg_, wWidth, wHeight, float(fbWidth) / float(wWidth));
+        draw_vg(vg_, wWidth, wHeight);
+        nvgEndFrame(vg_);
         //glEnable(GL_MULTISAMPLE);
     }
 

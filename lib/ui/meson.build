@@ -15,10 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ui_library = shared_library('sdr-ui',
-    'window.cpp',
     'grid.cpp',
     'interactive_view.cpp',
     'plate.cpp',
+    'window.cpp',
     dependencies: [
         font_res,
         glad_lib,

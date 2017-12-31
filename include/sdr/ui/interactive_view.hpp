@@ -28,7 +28,9 @@ class InteractiveView : public View {
 public:
     using View::View;
 
-    bool interact(nk_context* ctx, struct nk_rect r, bool zoom_around_cursor = false);
+    InteractiveView(View const& v) : View(v) {}
+
+    void interact(Window* wnd, struct nk_rect r, bool zoom_around_cursor = false);
 
 private:
     bool pressed = false;

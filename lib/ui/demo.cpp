@@ -82,7 +82,8 @@ int main() {
                            ((width - mx < 100) ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) | NVG_ALIGN_MIDDLE,
                            { float(mx), float(my) });
             }
-        }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](nk_context* ctx, int width, int height) {
+        }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](ui::Window* wnd, int width, int height) {
+            auto ctx = wnd->gui();
             if (prevShowLine && showLine) {
                 // Accept click only when press and release both happened
                 // on the background

@@ -20,7 +20,9 @@
 
 using namespace sdr::ui;
 
-bool InteractiveView::interact(nk_context* ctx, struct nk_rect r, bool zoom_around_cursor) {
+void InteractiveView::interact(Window* wnd, struct nk_rect r, bool zoom_around_cursor) {
+    auto ctx = wnd->gui();
+
     if (nk_input_is_mouse_hovering_rect(&ctx->input, r) && ctx->input.mouse.scroll_delta.y) {
         auto cursor = compute(r.w, r.h).local(ctx->input.mouse.pos);
 
@@ -40,5 +42,5 @@ bool InteractiveView::interact(nk_context* ctx, struct nk_rect r, bool zoom_arou
         ctx->input.mouse.ungrab = true;
     }
 
-    return nk_input_mouse_clicked(&ctx->input, NK_BUTTON_LEFT, r) && !nk_item_is_any_active(ctx);
+    // return nk_input_mouse_clicked(&ctx->input, NK_BUTTON_LEFT, r) && !nk_item_is_any_active(ctx);
 }

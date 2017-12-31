@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         auto showCursor = wnd->focused() && wnd->mouse_over() &&
                           wnd->cursor_mode() != ui::Window::CursorMode::Grab;
 
-        wnd->update(nk_rgb_f(0.05, 0.07, 0.05), [&local_buf,&v=view,&grid,&plate,mouse,showCursor](NVGcontext* vg, int width, int height) {
+        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&v=view,&plate,&grid,mouse,showCursor](NVGcontext* vg, int width, int height) {
             auto view = v.compute(width, height);
 
             grid.draw(vg, view);
@@ -201,9 +201,9 @@ int main(int argc, char* argv[]) {
 
                 plate.draw(vg, label, align, mouse);
             }
-        }, [&view,&mouse](nk_context* ctx, int width, int height) {
-            mouse = ctx->input.mouse.pos;
-            view.interact(ctx, { 0, 0, float(width), float(height) });
+        }, [&view,&mouse](ui::Window* w, int width, int height) {
+            mouse = w->gui()->input.mouse.pos;
+            view.interact(w, { 0, 0, float(width), float(height) });
         });
     }
 

@@ -55,11 +55,11 @@ public:
         return wnd;
     }
 
-    NVGcontext* vg_context() const {
-        return vg;
+    NVGcontext* vg() const {
+        return vg_;
     }
 
-    nk_context* gui_context() const {
+    nk_context* gui() const {
         return ctx;
     }
 
@@ -83,46 +83,46 @@ public:
     CursorMode cursor_mode() const;
     void cursor_mode(CursorMode mode);
 
-    void update(nk_color background,
+    void update(NVGcolor background,
                 std::function<void(int, int, int, int)> draw_gl,
                 std::function<void(NVGcontext*, int, int)> draw_vg,
-                std::function<void(nk_context*, int, int)> gui);
+                std::function<void(Window*, int, int)> gui);
 
     void update(std::function<void(int, int, int, int)> draw_gl,
                 std::function<void(NVGcontext*, int, int)> draw_vg,
-                std::function<void(nk_context*, int, int)> gui) {
-        update(nk_rgb(0, 0, 0), draw_gl, draw_vg, gui);
+                std::function<void(Window*, int, int)> gui) {
+        update(nvgRGB(0, 0, 0), draw_gl, draw_vg, gui);
     }
 
-    void update(nk_color background,
-                std::function<void(nk_context*, int, int)> gui) {
+    void update(NVGcolor background,
+                std::function<void(Window*, int, int)> gui) {
         update(background, nullptr, nullptr, gui);
     }
 
-    void update(std::function<void(nk_context*, int, int)> gui) {
-        update(nk_rgb(0, 0, 0), nullptr, nullptr, gui);
+    void update(std::function<void(Window*, int, int)> gui) {
+        update(nvgRGB(0, 0, 0), nullptr, nullptr, gui);
     }
 
-    void update(nk_color background,
+    void update(NVGcolor background,
                 std::function<void(NVGcontext*, int, int)> draw_vg,
-                std::function<void(nk_context*, int, int)> gui) {
+                std::function<void(Window*, int, int)> gui) {
         update(background, nullptr, draw_vg, gui);
     }
 
     void update(std::function<void(NVGcontext*, int, int)> draw_vg,
-                std::function<void(nk_context*, int, int)> gui) {
-        update(nk_rgb(0, 0, 0), nullptr, draw_vg, gui);
+                std::function<void(Window*, int, int)> gui) {
+        update(nvgRGB(0, 0, 0), nullptr, draw_vg, gui);
     }
 
 private:
-    Window(GLFWwindow* wnd_, NVGcontext* vg_, nk_glfw3_context* gctx_);
+    Window(GLFWwindow* wnd_, NVGcontext* vgc_, nk_glfw3_context* gctx_);
 
     static void focus_callback(GLFWwindow* wnd, int state);
     static void minimize_callback(GLFWwindow* wnd, int state);
     static void mouse_over_callback(GLFWwindow* wnd, int state);
 
     GLFWwindow* wnd;
-    NVGcontext* vg;
+    NVGcontext* vg_;
     nk_glfw3_context* gctx;
     nk_context* ctx;
 
