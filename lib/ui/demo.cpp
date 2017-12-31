@@ -84,6 +84,7 @@ int main() {
             }
         }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](ui::Window* wnd, int width, int height) {
             auto ctx = wnd->gui();
+
             if (prevShowLine && showLine) {
                 // Accept click only when press and release both happened
                 // on the background

@@ -30,7 +30,7 @@ public:
 
     InteractiveView(View const& v) : View(v) {}
 
-    void interact(Window* wnd, struct nk_rect r, bool zoom_around_cursor = false);
+    void interact(Window* wnd, Rect r, bool zoom_around_cursor = false);
 
 private:
     bool pressed = false;

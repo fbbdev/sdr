@@ -140,8 +140,8 @@ public:
         }
 
         std::pair<float, float> sides = (orientation_ == Horizontal) ?
-            std::minmax(view.local_x(0), view.local_x(view.width)) :
-            std::minmax(view.local_y(0), view.local_y(view.height));
+            std::minmax(view.local_x(0), view.local_x(view.r.w)) :
+            std::minmax(view.local_y(0), view.local_y(view.r.h));
 
         float start_pos = std::ceil(std::max(sides.first/s.step_ - offset_ - 1.0f, bounds_.first));
         s.start = s.value = s.step_ * (start_pos + offset_);

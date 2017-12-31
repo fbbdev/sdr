@@ -20,15 +20,15 @@
 
 using namespace sdr::ui;
 
-void InteractiveView::interact(Window* wnd, struct nk_rect r, bool zoom_around_cursor) {
+void InteractiveView::interact(Window* wnd, Rect r, bool zoom_around_cursor) {
     auto ctx = wnd->gui();
 
     if (nk_input_is_mouse_hovering_rect(&ctx->input, r) && ctx->input.mouse.scroll_delta.y) {
-        auto cursor = compute(r.w, r.h).local(ctx->input.mouse.pos);
+        auto cursor = compute(r).local(ctx->input.mouse.pos);
 
         zoom(ctx->input.mouse.scroll_delta.y);
         if (zoom_around_cursor)
-            move(nk_vec2_sub(compute(r.w, r.h).local(ctx->input.mouse.pos), cursor));
+            move(nk_vec2_sub(compute(r).local(ctx->input.mouse.pos), cursor));
     }
 
     if (!pressed && nk_input_is_mouse_click_down_in_rect(&ctx->input, NK_BUTTON_LEFT, r, true) &&
@@ -36,7 +36,7 @@ void InteractiveView::interact(Window* wnd, struct nk_rect r, bool zoom_around_c
         pressed = true;
         ctx->input.mouse.grab = true;
     } else if (pressed && nk_input_is_mouse_down(&ctx->input, NK_BUTTON_LEFT)){
-        move(compute(r.w, r.h).local_delta(ctx->input.mouse.delta));
+        move(compute(r).local_delta(ctx->input.mouse.delta));
     } else if (pressed) {
         pressed = false;
         ctx->input.mouse.ungrab = true;

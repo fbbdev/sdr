@@ -45,14 +45,14 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
                 float label_x =
                     (ha & NVG_ALIGN_LEFT) ? style.label_distance :
                         (ha & NVG_ALIGN_RIGHT) ? -style.label_distance : 0.0f;
-                float label_y = style.label_margin + (view.height - 2*style.label_margin)*style.label_position;
+                float label_y = style.label_margin + (view.r.h - 2*style.label_margin)*style.label_position;
 
                 nvgBeginPath(vg);
 
                 for (auto x: scale) {
                     auto gx = view.global_x(x);
                     nvgMoveTo(vg, gx, 0);
-                    nvgLineTo(vg, gx, view.height);
+                    nvgLineTo(vg, gx, view.r.h);
 
                     if (style.label)
                         nvgText(vg, gx + label_x, label_y, format(x, step_mag).c_str(), nullptr);
@@ -64,7 +64,7 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
 
                 nvgTextAlign(vg, detail::halign(style.label_align) | va);
 
-                float label_x = style.label_margin + (view.width - 2*style.label_margin)*style.label_position;
+                float label_x = style.label_margin + (view.r.w - 2*style.label_margin)*style.label_position;
                 float label_y =
                     (va & NVG_ALIGN_TOP) ? style.label_distance :
                         (va & (NVG_ALIGN_BOTTOM | NVG_ALIGN_BASELINE)) ? -style.label_distance : 0.0f;
@@ -74,7 +74,7 @@ void Grid::draw(NVGcontext* vg, AppliedView const& view) const {
                 for (auto y: scale) {
                     auto gy = view.global_y(y);
                     nvgMoveTo(vg, 0, gy);
-                    nvgLineTo(vg, view.width, gy);
+                    nvgLineTo(vg, view.r.w, gy);
 
                     if (style.label)
                         nvgText(vg, label_x, gy + label_y, format(y, step_mag).c_str(), nullptr);

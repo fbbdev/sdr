@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
                           wnd->cursor_mode() != ui::Window::CursorMode::Grab;
 
         wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&v=view,&plate,&grid,mouse,showCursor](NVGcontext* vg, int width, int height) {
-            auto view = v.compute(width, height);
+            auto view = v.compute({ 0, 0, float(width), float(height) });
 
             grid.draw(vg, view);
 

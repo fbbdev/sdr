@@ -27,21 +27,22 @@ namespace sdr { namespace ui
 {
 
 using Vec2 = struct nk_vec2;
+using Rect = struct nk_rect;
 
 struct AppliedView {
-    int width = 0, height = 0;
-    Vec2 s = { 0.0f, 0.0f }, t = { 0.0f, 0.0f };
+    Rect r = { 0.0f, 0.0f, 0.0f, 0.0f };
+    Vec2 s = { 1.0f, 1.0f }, t = { 0.0f, 0.0f };
 
     Vec2 local(Vec2 p) const {
-        return { p.x/s.x - t.x, p.y/s.y - t.y };
+        return { (p.x - r.x)/s.x - t.x, (p.y - r.y)/s.y - t.y };
     }
 
     float local_x(float x) const {
-        return x/s.x - t.x;
+        return (x - r.x)/s.x - t.x;
     }
 
     float local_y(float y) const {
-        return y/s.y - t.y;
+        return (y - r.y)/s.y - t.y;
     }
 
     Vec2 local_delta(Vec2 p) const {
@@ -57,15 +58,15 @@ struct AppliedView {
     }
 
     Vec2 global(Vec2 p) const {
-        return { (p.x + t.x)*s.x, (p.y + t.y)*s.y };
+        return { (p.x + t.x)*s.x + r.x, (p.y + t.y)*s.y + r.y };
     }
 
     float global_x(float x) const {
-        return (x + t.x)*s.x;
+        return (x + t.x)*s.x + r.x;
     }
 
     float global_y(float y) const {
-        return (y + t.y)*s.y;
+        return (y + t.y)*s.y + r.y;
     }
 
     Vec2 global_delta(Vec2 p) const {
@@ -81,6 +82,7 @@ struct AppliedView {
     }
 
     void apply(NVGcontext* vg) const {
+        nvgTranslate(vg, r.x, r.y);
         nvgScale(vg, s.x, s.y);
         nvgTranslate(vg, t.x, t.y);
     }
@@ -154,13 +156,13 @@ public:
             size_.y *= fac.y;
     }
 
-    AppliedView compute(int width, int height) const {
-        auto mm = (width < height) ? std::pair<float, float>{ width, height }
-                                   : std::pair<float, float>{ height, width };
+    AppliedView compute(Rect r) const {
+        auto mm = (r.w < r.h) ? std::make_pair(r.w, r.h)
+                              : std::make_pair(r.h, r.w);
 
         AppliedView v = {
-            width, height,
-            ((iso == NonIsometric) ? Vec2{float(width), float(height)} :
+            r,
+            ((iso == NonIsometric) ? Vec2{r.w, r.h} :
                  (iso == IsometricFitMin) ? Vec2{mm.first, mm.first}
                                           : Vec2{mm.second, mm.second}),
             {}
@@ -169,7 +171,7 @@ public:
         v.s.x /= size_.x;
         v.s.y /= size_.y;
 
-        v.t = nk_vec2_sub(v.local_delta({ width/2.0f, height/2.0f }), center_);
+        v.t = nk_vec2_sub(v.local_delta({ r.w/2.0f, r.h/2.0f }), center_);
 
         return v;
     }
