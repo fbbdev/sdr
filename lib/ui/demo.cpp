@@ -46,6 +46,22 @@ int main() {
 
     ui::Cursor cursor(ui::Cursor::Vertical, ui::Plate(NVG_ALIGN_MIDDLE));
 
+    bool special_style = false;
+    auto window_style_normal = wnd->gui()->style.window;
+    auto window_style_special = window_style_normal;
+
+    window_style_special.background = nk_rgba(0, 0, 0, 0);
+    window_style_special.fixed_background = nk_style_item_hide();
+    window_style_special.header.normal = nk_style_item_hide();
+    window_style_special.header.hover = nk_style_item_hide();
+    window_style_special.header.active = nk_style_item_hide();
+    window_style_special.header.minimize_button.normal = nk_style_item_color(nk_rgba(255, 255, 255, 20));
+    window_style_special.header.minimize_button.hover = nk_style_item_color(nk_rgba(255, 255, 255, 40));
+    window_style_special.header.minimize_button.active = nk_style_item_color(nk_rgba(100, 100, 100, 100));
+    window_style_special.header.minimize_button.rounding = 12;
+    window_style_special.header.minimize_button.text_alignment = NK_TEXT_ALIGN_CENTERED;
+    window_style_special.header.minimize_button.padding = { -1, 0 };
+
     while (!wnd->closed()) {
         auto time = glfwGetTime();
         ++frames;
@@ -75,7 +91,8 @@ int main() {
                 cursor.draw(vg, { 0.0f, 0.0f, float(width), float(height) },
                             { float(mx), float(my) }, ui::format(mx));
             }
-        }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](ui::Window* wnd, int width, int height) {
+        }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed,
+            &special_style,&window_style_normal,&window_style_special](ui::Window* wnd, int width, int height) {
             auto ctx = wnd->gui();
 
             if (prevShowLine && showLine) {
@@ -100,17 +117,23 @@ int main() {
 
             auto y = height - (nk_window_is_collapsed(ctx, "Settings") ? header_height : h) - 10;
 
+            if (special_style)
+                ctx->style.window = window_style_special;
+            int p = nk_begin(ctx, "Settings", nk_rect(width - w - 10, y, w, h),
+                             NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR);
+            ctx->style.window = window_style_normal;
 
-            if (nk_begin(ctx, "Settings", nk_rect(width - w - 10, y, w, h),
-                         NK_WINDOW_TITLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_NO_SCROLLBAR))
-            {
+            if (p) {
                 nk_layout_row_dynamic(ctx, 25, 1);
 
                 nk_property_int(ctx, "Average count:", 1, &avgCount, std::numeric_limits<int>::max(), 1, 0.25);
                 nk_property_float(ctx, "Scale:", 0.0f, &scale, std::numeric_limits<float>::max(), 5, 1.0f);
 
-                if (nk_button_label(ctx, "Autoscale"))
-                    std::cout << "autoscale" << std::endl;
+                if (nk_button_label(ctx, "Autoscale")) {
+                    special_style = !special_style;
+                    std::cout << (special_style ? "special" : "normal")
+                              << " style" << std::endl;
+                }
             }
             nk_end(ctx);
         });
