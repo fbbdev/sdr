@@ -96,18 +96,20 @@ public:
         IsometricFitMax,
     };
 
-    View(Vec2 size = { 1.0f, 1.0f },
-         Vec2 center = { 0.0f, 0.0f },
-         Vec2 zoom_rate = { 1.1f, 1.1f })
+    explicit View(Vec2 size = { 1.0f, 1.0f },
+                  Vec2 center = { 0.0f, 0.0f },
+                  Vec2 zoom_rate = { 1.1f, 1.1f })
         : iso(NonIsometric), size_(size), center_(center), rate(zoom_rate)
         {}
 
-    View(IsometricMode mode,
-         Vec2 size = { 1.0f, 1.0f },
-         Vec2 center = { 0.0f, 0.0f },
-         Vec2 zoom_rate = { 1.1f, 1.1f })
+    explicit View(IsometricMode mode,
+                  Vec2 size,
+                  Vec2 center = { 0.0f, 0.0f },
+                  Vec2 zoom_rate = { 1.1f, 1.1f })
         : iso(mode), size_(size), center_(center), rate(zoom_rate)
         {}
+
+    View(IsometricMode mode) : View(mode, { 1.0f, 1.0f }) {}
 
     View(View const&) = default;
     View(View&&) = default;

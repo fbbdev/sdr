@@ -34,22 +34,26 @@ struct PlateStyle {
 
 class Plate {
 public:
-    Plate(int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
+    explicit Plate(int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP,
+                   Vec2 p = { 0.0f, 0.0f })
         : align_(a), pos_(p)
         {}
 
-    Plate(PlateStyle s,
-          int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
+    explicit Plate(PlateStyle s,
+                   int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP,
+                   Vec2 p = { 0.0f, 0.0f })
         : style_(s), align_(a), pos_(p)
         {}
 
-    Plate(StringView l,
-          int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
+    explicit Plate(StringView l,
+                   int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP,
+                   Vec2 p = { 0.0f, 0.0f })
         : label_(l.to_string()), align_(a), pos_(p)
         {}
 
-    Plate(StringView l, PlateStyle s,
-          int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
+    explicit Plate(StringView l, PlateStyle s,
+                   int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP,
+                   Vec2 p = { 0.0f, 0.0f })
         : label_(l.to_string()), style_(s), align_(a), pos_(p)
         {}
 
