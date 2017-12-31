@@ -21,6 +21,7 @@
 #include "cursor.hpp"
 #include "format.hpp"
 #include "grid.hpp"
+#include "grid_view.hpp"
 #include "interactive_view.hpp"
 #include "plate.hpp"
 #include "string_view.hpp"

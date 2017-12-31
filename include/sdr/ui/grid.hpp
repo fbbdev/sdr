@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "ui.hpp"
 #include "view.hpp"
+#include "window.hpp"
 
 #include <cmath>
 #include <cstdint>

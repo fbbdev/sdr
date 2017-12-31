@@ -121,11 +121,9 @@ int main(int argc, char* argv[]) {
     std::thread proc(processor, id, throttle);
     proc.detach();
 
-    struct nk_vec2 mouse = { 0.0f, 0.0f };
-
-    ui::InteractiveView view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
-    ui::Cursor cursor(ui::Cursor::Cross);
-    ui::Grid grid({
+    ui::GridView view(nvgRGBf(0.05, 0.07, 0.05),
+                      ui::Cursor(ui::Cursor::Cross, ui::Plate(NVG_ALIGN_BOTTOM)),
+                      ui::Grid({
         { { nvgRGB(60, 180, 60), 1.0f }, {
             ui::Scale(ui::Scale::Horizontal, 0, { -0.5, 0.5 }, 1.0f),
             ui::Scale(ui::Scale::Vertical, 0, { -0.5, 0.5 }, 1.0f),
@@ -140,53 +138,39 @@ int main(int argc, char* argv[]) {
             ui::Scale(ui::Scale::Horizontal, 0.5f, 100, 1.0f),
             ui::Scale(ui::Scale::Vertical, 0.5f, 100, 1.0f),
         } },
-    });
+    }), ui::View(ui::View::IsometricFitMin, { 4.0f, -4.0f }));
 
     while (!wnd->closed()) {
         buffer_lock.lock();
         std::copy(buf.begin(), buf.end(), local_buf.begin());
         buffer_lock.unlock();
 
-        auto showCursor = wnd->focused() && wnd->mouse_over() &&
-                          wnd->cursor_mode() != ui::Window::CursorMode::Grab;
+        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&view](NVGcontext* vg, int width, int height) {
+            view.draw(vg, { 0.0f, 0.0f, float(width), float(height) },
+                      [&local_buf](NVGcontext* vg, ui::AppliedView view, ui::Vec2 mouse, bool) -> std::string {
+                // draw constellation
+                view.apply(vg);
 
-        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&v=view,&cursor,&grid,mouse,showCursor](NVGcontext* vg, int width, int height) {
-            auto view = v.compute({ 0, 0, float(width), float(height) });
+                nvgFillColor(vg, nvgRGB(80, 208, 80));
+                nvgBeginPath(vg);
+                auto r = view.local_delta_x(1.5f);
+                for (auto sample: local_buf) {
+                    nvgCircle(vg, sample.real(), sample.imag(), r);
+                }
+                nvgFill(vg);
 
-            grid.draw(vg, view);
-
-            // draw constellation
-            nvgSave(vg);
-
-            view.apply(vg);
-
-            nvgFillColor(vg, nvgRGB(80, 208, 80));
-            nvgBeginPath(vg);
-            auto r = view.local_delta_x(1.5f);
-            for (auto sample: local_buf) {
-                nvgCircle(vg, sample.real(), sample.imag(), r);
-            }
-            nvgFill(vg);
-
-            nvgRestore(vg);
-
-            // draw cursor
-            if (showCursor) {
-                // Lines
+                // build cursor label
                 auto coord = view.local(mouse);
                 ui::Vec2 pixel_mag = {
                     std::floor(std::log10(std::abs(view.local_delta_x(1)))),
                     std::floor(std::log10(std::abs(view.local_delta_y(1))))
                 };
 
-                std::string label = ui::format(coord.x, pixel_mag.x) +
-                                    ((coord.y < 0) ? "-" : "+") + "j" +
-                                    ui::format(std::abs(coord.y), pixel_mag.y);
-
-                cursor.draw(vg, view.r, mouse, label);
-            }
-        }, [&view,&mouse](ui::Window* w, int width, int height) {
-            mouse = w->gui()->input.mouse.pos;
+                return ui::format(coord.x, pixel_mag.x) +
+                    ((coord.y < 0) ? "-" : "+") + "j" +
+                        ui::format(std::abs(coord.y), pixel_mag.y);
+            });
+        }, [&view](ui::Window* w, int width, int height) {
             view.interact(w, { 0, 0, float(width), float(height) });
         });
     }

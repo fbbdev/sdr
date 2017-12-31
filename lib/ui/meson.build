@@ -17,6 +17,7 @@
 ui_library = shared_library('sdr-ui',
     'cursor.cpp',
     'grid.cpp',
+    'grid_view.cpp',
     'interactive_view.cpp',
     'plate.cpp',
     'window.cpp',
