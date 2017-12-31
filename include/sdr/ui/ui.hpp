@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "cursor.hpp"
 #include "format.hpp"
 #include "grid.hpp"
 #include "interactive_view.hpp"

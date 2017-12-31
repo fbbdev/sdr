@@ -44,7 +44,7 @@ int main() {
     bool mpressed = false;
     bool prevShowLine = false;
 
-    ui::Plate plate;
+    ui::Cursor cursor(ui::Cursor::Vertical, ui::Plate(NVG_ALIGN_MIDDLE));
 
     while (!wnd->closed()) {
         auto time = glfwGetTime();
@@ -61,7 +61,7 @@ int main() {
 
         bool showLine = wnd->focused() && wnd->mouse_over();
 
-        wnd->update([avgCount,scale,fps,&plate,mx,my,showLine](NVGcontext* vg, int width, int height) {
+        wnd->update([avgCount,scale,fps,&cursor,mx,my,showLine](NVGcontext* vg, int width, int height) {
             nvgFillColor(vg, nvgRGBf(1.0f, 1.0f, 1.0f));
             nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
             nvgText(vg, 10, 10, fps.c_str(), NULL);
@@ -72,15 +72,8 @@ int main() {
             nvgFill(vg);
 
             if (showLine) {
-                nvgStrokeColor(vg, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
-                nvgBeginPath(vg);
-                nvgMoveTo(vg, mx, 0);
-                nvgLineTo(vg, mx, height);
-                nvgStroke(vg);
-
-                plate.draw(vg, ui::format(mx),
-                           ((width - mx < 100) ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) | NVG_ALIGN_MIDDLE,
-                           { float(mx), float(my) });
+                cursor.draw(vg, { 0.0f, 0.0f, float(width), float(height) },
+                            { float(mx), float(my) }, ui::format(mx));
             }
         }, [&avgCount,&scale,mx,prevShowLine,showLine,&mpressed](ui::Window* wnd, int width, int height) {
             auto ctx = wnd->gui();

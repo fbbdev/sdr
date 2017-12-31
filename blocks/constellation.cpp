@@ -121,9 +121,10 @@ int main(int argc, char* argv[]) {
     std::thread proc(processor, id, throttle);
     proc.detach();
 
-    ui::InteractiveView view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
     struct nk_vec2 mouse = { 0.0f, 0.0f };
 
+    ui::InteractiveView view(ui::View::IsometricFitMin, { 4.0f, -4.0f });
+    ui::Cursor cursor(ui::Cursor::Cross);
     ui::Grid grid({
         { { nvgRGB(60, 180, 60), 1.0f }, {
             ui::Scale(ui::Scale::Horizontal, 0, { -0.5, 0.5 }, 1.0f),
@@ -141,8 +142,6 @@ int main(int argc, char* argv[]) {
         } },
     });
 
-    ui::Plate plate;
-
     while (!wnd->closed()) {
         buffer_lock.lock();
         std::copy(buf.begin(), buf.end(), local_buf.begin());
@@ -151,7 +150,7 @@ int main(int argc, char* argv[]) {
         auto showCursor = wnd->focused() && wnd->mouse_over() &&
                           wnd->cursor_mode() != ui::Window::CursorMode::Grab;
 
-        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&v=view,&plate,&grid,mouse,showCursor](NVGcontext* vg, int width, int height) {
+        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&v=view,&cursor,&grid,mouse,showCursor](NVGcontext* vg, int width, int height) {
             auto view = v.compute({ 0, 0, float(width), float(height) });
 
             grid.draw(vg, view);
@@ -174,15 +173,6 @@ int main(int argc, char* argv[]) {
             // draw cursor
             if (showCursor) {
                 // Lines
-                nvgStrokeColor(vg, nvgRGBf(0.6f, 0.6f, 0.6f));
-
-                nvgBeginPath(vg);
-                nvgMoveTo(vg, mouse.x, 0);
-                nvgLineTo(vg, mouse.x, height);
-                nvgMoveTo(vg, 0, mouse.y);
-                nvgLineTo(vg, width, mouse.y);
-                nvgStroke(vg);
-
                 auto coord = view.local(mouse);
                 ui::Vec2 pixel_mag = {
                     std::floor(std::log10(std::abs(view.local_delta_x(1)))),
@@ -193,13 +183,7 @@ int main(int argc, char* argv[]) {
                                     ((coord.y < 0) ? "-" : "+") + "j" +
                                     ui::format(std::abs(coord.y), pixel_mag.y);
 
-                bool left   = (width - mouse.x < 100),
-                     bottom = (mouse.y < 50);
-
-                int align = (left ? NVG_ALIGN_RIGHT : NVG_ALIGN_LEFT) |
-                            (bottom ? NVG_ALIGN_TOP : NVG_ALIGN_BOTTOM);
-
-                plate.draw(vg, label, align, mouse);
+                cursor.draw(vg, view.r, mouse, label);
             }
         }, [&view,&mouse](ui::Window* w, int width, int height) {
             mouse = w->gui()->input.mouse.pos;
