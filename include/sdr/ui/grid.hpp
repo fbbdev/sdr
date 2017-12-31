@@ -325,7 +325,7 @@ private:
     value_type value = 0.0f;
 };
 
-Scale operator+(Scale::difference_type i, Scale const& s) {
+inline Scale operator+(Scale::difference_type i, Scale const& s) {
     return s + i;
 }
 
