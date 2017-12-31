@@ -35,67 +35,83 @@ struct PlateStyle {
 class Plate {
 public:
     Plate(int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
-        : align(a), pos(p)
+        : align_(a), pos_(p)
         {}
 
     Plate(PlateStyle s,
           int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
-        : style(s), align(a), pos(p)
+        : style_(s), align_(a), pos_(p)
         {}
 
     Plate(StringView l,
           int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
-        : label(l.to_string()), align(a), pos(p)
+        : label_(l.to_string()), align_(a), pos_(p)
         {}
 
     Plate(StringView l, PlateStyle s,
           int a = NVG_ALIGN_LEFT | NVG_ALIGN_TOP, Vec2 p = { 0.0f, 0.0f })
-        : label(l.to_string()), style(s), align(a), pos(p)
+        : label_(l.to_string()), style_(s), align_(a), pos_(p)
         {}
+
+    StringView label() const {
+        return label_;
+    }
+
+    PlateStyle const& style() const {
+        return style_;
+    }
+
+    int align() const {
+        return align_;
+    }
+
+    Vec2 pos() const {
+        return pos_;
+    }
 
     // Use default values
     void draw(NVGcontext* vg) const {
-        draw(vg, label, align, pos);
+        draw(vg, label_, align_, pos_);
     }
 
     // Change position
     void draw(NVGcontext* vg, Vec2 p) const {
-        draw(vg, label, align, p);
+        draw(vg, label_, align_, p);
     }
 
     // Change alignment
     void draw(NVGcontext* vg, int a) const {
-        draw(vg, label, a, pos);
+        draw(vg, label_, a, pos_);
     }
 
     // Change alignment and position
     void draw(NVGcontext* vg, int a, Vec2 p) const {
-        draw(vg, label, a, p);
+        draw(vg, label_, a, p);
     }
 
     // Change label
     void draw(NVGcontext* vg, StringView l) const {
-        draw(vg, l, align, pos);
+        draw(vg, l, align_, pos_);
     }
 
     // Change label and position
     void draw(NVGcontext* vg, StringView l, Vec2 p) const {
-        draw(vg, l, align, p);
+        draw(vg, l, align_, p);
     }
 
     // Change label and alignment
     void draw(NVGcontext* vg, StringView l, int a) const {
-        draw(vg, l, a, pos);
+        draw(vg, l, a, pos_);
     }
 
     // Draw plate
     void draw(NVGcontext* vg, StringView l, int a, Vec2 p) const;
 
 private:
-    std::string label;
-    PlateStyle style;
-    int align;
-    Vec2 pos;
+    std::string label_;
+    PlateStyle style_;
+    int align_;
+    Vec2 pos_;
 };
 
 } /* namespace ui */ } /* namespace sdr */

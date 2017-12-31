@@ -32,33 +32,33 @@ void Plate::draw(NVGcontext* vg, StringView l, int a, Vec2 p) const {
         valign = NVG_ALIGN_BOTTOM;
 
     float label_x =
-        (halign & NVG_ALIGN_LEFT) ? p.x + style.margin + style.padding :
-            (halign & NVG_ALIGN_RIGHT) ? p.x - style.margin - style.padding : p.x;
+        (halign & NVG_ALIGN_LEFT) ? p.x + style_.margin + style_.padding :
+            (halign & NVG_ALIGN_RIGHT) ? p.x - style_.margin - style_.padding : p.x;
     float label_y =
-        (valign & NVG_ALIGN_TOP) ? p.y + style.margin + style.padding :
-            (valign & NVG_ALIGN_BOTTOM) ? p.y - style.margin - style.padding : p.y;
+        (valign & NVG_ALIGN_TOP) ? p.y + style_.margin + style_.padding :
+            (valign & NVG_ALIGN_BOTTOM) ? p.y - style_.margin - style_.padding : p.y;
 
     float bounds[4];
     nvgTextBounds(vg, label_x, label_y, l.begin(), l.end(), bounds);
     float label_width = std::abs(bounds[2] - bounds[0]);
     float label_height = std::abs(bounds[3] - bounds[1]);
 
-    float plate_width = label_width + 2*style.padding;
-    float plate_height = label_height + 2*style.padding;
+    float plate_width = label_width + 2*style_.padding;
+    float plate_height = label_height + 2*style_.padding;
 
     float plate_x =
-        (halign & NVG_ALIGN_LEFT) ? p.x + style.margin :
-            (halign & NVG_ALIGN_RIGHT) ? p.x - style.margin - plate_width : p.x - (plate_width/2);
+        (halign & NVG_ALIGN_LEFT) ? p.x + style_.margin :
+            (halign & NVG_ALIGN_RIGHT) ? p.x - style_.margin - plate_width : p.x - (plate_width/2);
     float plate_y =
-        (valign & NVG_ALIGN_TOP) ? p.y + style.margin :
-            (valign & NVG_ALIGN_BOTTOM) ? p.y - style.margin - plate_height : p.y - (plate_height/2);
+        (valign & NVG_ALIGN_TOP) ? p.y + style_.margin :
+            (valign & NVG_ALIGN_BOTTOM) ? p.y - style_.margin - plate_height : p.y - (plate_height/2);
 
-    nvgFillColor(vg, style.bg);
+    nvgFillColor(vg, style_.bg);
     nvgBeginPath(vg);
-    nvgRoundedRect(vg, plate_x, plate_y, plate_width, plate_height, style.radius);
+    nvgRoundedRect(vg, plate_x, plate_y, plate_width, plate_height, style_.radius);
     nvgFill(vg);
 
-    nvgFillColor(vg, style.fg);
+    nvgFillColor(vg, style_.fg);
     nvgTextAlign(vg, halign | valign);
     nvgText(vg, label_x, label_y, l.begin(), l.end());
 
