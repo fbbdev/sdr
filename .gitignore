@@ -4,6 +4,7 @@ build/
 *.pch
 tags
 .tags
+.tags1
 TAGS
 .TAGS
 license_comment.txt
