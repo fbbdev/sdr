@@ -145,8 +145,8 @@ int main(int argc, char* argv[]) {
         std::copy(buf.begin(), buf.end(), local_buf.begin());
         buffer_lock.unlock();
 
-        wnd->update(nvgRGBf(0.05, 0.07, 0.05), [&local_buf,&view](NVGcontext* vg, int width, int height) {
-            view.draw(vg, { 0.0f, 0.0f, float(width), float(height) },
+        wnd->update([&local_buf,&view](NVGcontext* vg, int width, int height) {
+            view.draw(vg, { 0, 0, float(width), float(height) },
                       [&local_buf](NVGcontext* vg, ui::AppliedView view, ui::Vec2 mouse, bool) -> std::string {
                 // draw constellation
                 view.apply(vg);

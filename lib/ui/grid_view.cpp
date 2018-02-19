@@ -52,7 +52,8 @@ void GridView::draw(NVGcontext* vg, Rect r,
 
 void GridView::interact(Window* wnd, Rect r, bool zoom_around_cursor) {
     mouse = wnd->gui()->input.mouse.pos;
-    mouse_over = wnd->mouse_over();
+    mouse_over = wnd->mouse_over() &&
+                 nk_input_is_mouse_hovering_rect(&wnd->gui()->input, r);
     show_cursor = mouse_over && wnd->focused() &&
                   wnd->cursor_mode() != Window::CursorMode::Grab;
 
