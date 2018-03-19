@@ -34,7 +34,7 @@ HEADER_END = """    };
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("Usage: {} FILE ID".format(sys.argv[0]), file=stderr)
+        print("Usage: {} FILE ID".format(sys.argv[0]), file=sys.stderr)
 
     filename = sys.argv[1]
     identifier = sys.argv[2]
